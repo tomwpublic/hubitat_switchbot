@@ -1,49 +1,49 @@
 {
-  "packageName": "hubitat_switchBot",
+  "packageName": "hubitat_switchbot",
   "author": "tomw",
   "version": "0.9.0",
   "minimumHEVersion": "2.1.9",
-  "dateReleased": "2021-12-12",
+  "dateReleased": "2021-01-12",
   "drivers": [
     {
       "id": "7af1a40d-7ee8-42f3-a6b9-b9da30281434",
       "name": "SwitchBot System",
       "namespace": "tomw",
-      "location": "...",
+      "location": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/switchbotSystem",
       "required": true
     },
     {
       "id": "e9fef8bc-4c22-4c7e-b319-f162ba6062fa",
       "name": "SwitchBot Bot",
       "namespace": "tomw",
-      "location": "...",
+      "location": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/switchbotBot",
       "required": false
     },
     {
       "id": "d76ae7a9-e6f3-4042-93fd-f7757daf1546",
       "name": "SwitchBot Curtain",
       "namespace": "tomw",
-      "location": "...",
+      "location": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/switchbotCurtain",
       "required": false
     },
     {
       "id": "37ad0b63-b301-47f6-a191-8b551fdd8092",
       "name": "SwitchBot IR Device",
       "namespace": "tomw",
-      "location": "...",
+      "location": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/switchbotIRDevice",
       "required": false
     },
     {
       "id": "80206283-1123-430f-a96e-8f088a44a195",
       "name": "SwitchBot Meter",
       "namespace": "tomw",
-      "location": "...",
+      "location": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/switchbotMeter",
       "required": false
     }
     
   ],
-  "licenseFile": "...",
+  "licenseFile": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/LICENSE",
   "releaseNotes": "0.9.0 - @tomw - Initial release.  HT Meter and IR functionality fully tested.  Other devices untested and released as public beta.",
-  "documentationLink": "...",
+  "documentationLink": "https://github.com/tomwpublic/hubitat_switchbot/blob/main/README.md",
   "communityLink": "https://community.hubitat.com/u/tomw/summary"
 }
