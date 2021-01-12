@@ -1,0 +1,174 @@
+/*
+
+Copyright 2020 - tomw
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-------------------------------------------
+
+Change history:
+
+0.9.0 - @tomw - Initial release.
+
+*/
+
+metadata
+{
+    definition(name: "SwitchBot Curtain", namespace: "tomw", author: "tomw", importUrl: "")
+    {
+        capability "Initialize"
+        capability "Refresh"
+        capability "RelaySwitch"
+        capability "Switch"
+        capability "WindowShade"
+    }
+}
+
+def initialize()
+{
+    sendEvent(name: "position", value: "unknown")
+    sendEvent(name: "switch", value: "unknown")
+    sendEvent(name: "windowShade", value: "unknown")
+    
+    refresh()
+}
+
+def refresh()
+{
+    unschedule(refresh)
+    
+    try
+    {
+        def id = getParent()?.getId(device.getDeviceNetworkId())
+        def respData = getParent()?.readDeviceStatus(id)
+        
+        if(!respData)
+        {
+            return
+        }
+        
+        if(respData.body?.slidePosition)
+        {
+            sendEvent(name: "position", value: respData.body.slidePosition)
+        }
+        
+        def windowShade = "unknown"
+        def switchState = "unknown"
+        if(respData.body?.moving)
+        {
+            // if moving, get status again to see if we can figure out which direction
+            def respData2 = getParent()?.readDeviceStatus(id)
+            if(respData2.body.slidePosition && respData.body.slidePosition &&
+               respData2.body.slidePosition.isInteger() && respData.body.slidePosition.isInteger())
+            {
+                windowShade =
+                    (respData2.body.slidePosition.toInteger() > respData.body.slidePosition.toInteger()) ? "opening" : "closing"
+            }
+            
+            // refresh again so that we get the final state
+            runIn(2, refresh)
+        }
+        else if(respData.body?.slidePosition && respData.body?.slidePosition.isInteger())
+        {
+            switch(respData.body.slidePosition.toInteger())
+            {
+                case 95..100:
+                    windowShade = "open"
+                    switchState = "on"
+                    break
+                case 0..5:
+                    windowShade = "closed"
+                    switchState = "off"
+                    break
+                default:
+                    windowShade = "partially open"
+                    switchState = "off"
+            }
+        }
+        sendEvent(name: "windowShade", value: windowShade)
+        sendEvent(name: "switch", value: switchState)
+    }
+    catch (Exception e)
+    {
+        log.debug "refresh() failed: ${e.message}"
+    }
+}
+
+def on()
+{
+    open()
+}
+
+def off()
+{
+    off()
+}
+
+def open()
+{
+    if(!checkForCalibration()) {return}
+    
+    def id = getParent()?.getId(device.getDeviceNetworkId())
+    if(id)
+    {
+        def respData = getParent()?.writeDeviceCommand(id, "turnOn", "default", "command")
+        runIn(2, refresh)
+    }
+}
+
+def close()
+{
+    if(!checkForCalibration()) {return}
+    
+    def id = getParent()?.getId(device.getDeviceNetworkId())
+    if(id)
+    {
+        def respData = getParent()?.writeDeviceCommand(id, "turnOff", "default", "command")
+        runIn(2, refresh)
+    }
+}
+
+def setPosition(position)
+{
+    if(!checkForCalibration()) {return}
+    
+    def id = getParent()?.getId(device.getDeviceNetworkId())
+    if(id)
+    {
+        // TODO: make mode configurable?
+        def respData = getParent()?.writeDeviceCommand(id, "press", "0,ff,100", "command")
+        runIn(2, refresh)
+    }    
+}
+
+def checkForCalibration()
+{
+    try
+    {
+        def id = getParent()?.getId(device.getDeviceNetworkId())
+        def respData = getParent()?.readDeviceStatus(id)
+        
+        if(!respData || !respData?.body?.calibrate)
+        {
+            log.debug "need to calibrate curtain"
+            return false
+        }
+        
+        return respData.body?.calibrate
+    }
+    catch (Exception e)
+    {
+        log.debug "checkForCalibration() failed: ${e.message}"
+        return false
+    }
+}

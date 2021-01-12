@@ -1,0 +1,425 @@
+/*
+
+Copyright 2020 - tomw
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-------------------------------------------
+
+Change history:
+
+0.9.0 - @tomw - Initial release.
+
+*/
+
+metadata
+{
+    definition(name: "SwitchBot System", namespace: "tomw", author: "tomw", importUrl: "")
+    {
+        capability "Initialize"
+        capability "Refresh"
+        
+        command "createChildDevices"
+        command "deleteChildDevices"
+        
+        command "executeScene", ["sceneId"]
+        
+        attribute "commStatus", "string"        
+    }
+}
+
+preferences
+{
+    section
+    {
+        input "openToken", "text", title: "Open Token (from SwitchBot app)", required: true
+        input "refreshInterval", "number", title: "Polling refresh interval in seconds (caution: 1000 operation limit per day)", defaultValue: 300
+        input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: false
+    }
+}
+
+def logDebug(msg) 
+{
+    if (logEnable)
+    {
+        log.debug(msg)
+    }
+}
+
+def initialize()
+{
+    sendEvent(name: "commStatus", value: "unknown")
+    
+    try
+    {
+        readDevices()
+        readScenes()
+        refresh()
+    }
+    catch (Exception e)
+    {
+        logDebug("initialize() failed: ${e.message}")
+        return
+    }
+}
+
+def updated()
+{
+    configure()
+}
+
+def configure()
+{
+    state.clear
+    
+    initialize()
+}
+
+def refresh()
+{
+    unschedule(refresh)
+    
+    for(child in getChildDevices())
+    {
+        child.refresh()
+    }
+    
+    runIn(refreshInterval ?: 300, refresh)
+}
+
+def uninstalled()
+{
+    unschedule()
+}
+
+def checkCommStatus()
+{
+    switch(device.currentValue("commStatus"))
+    {
+        case "active":
+            logDebug("checkCommStatus() success")
+            return true
+        
+        case "error":
+        case "inactive":
+        case "unknown":
+        default:
+            logDebug("checkCommStatus() failed")
+            return false
+    }
+}
+
+def createChildDevices()
+{
+    def devices = getDevices()
+    
+    if(!devices)
+    {
+        return
+    }
+    
+    devices?.deviceList?.each
+    {
+        logDebug("device = ${it}")
+        if((it.deviceId && it.deviceName && it.deviceType) && !findChildDevice(it.deviceId, it.deviceType))
+        {
+            createChildDevice(it.deviceName, it.deviceId, it.deviceType)
+        }
+    }
+    
+    devices?.infraredRemoteList?.each
+    {
+        logDebug("device = ${it}")
+        if((it.deviceId && it.deviceName && it.remoteType) && !findChildDevice(it.deviceId, it.remoteType))
+        {
+            createChildDevice(it.deviceName, it.deviceId, "IR Device")
+        }
+    }
+}
+
+def deleteChildDevices()
+{
+    for(child in getChildDevices())
+    {
+        deleteChildDevice(child.deviceNetworkId)
+    }
+}
+
+def childName(name, deviceType)
+{
+    return "${name.toString()}-${deviceType.toString()}"
+}
+
+def childDni(id, deviceType)
+{
+    return "${id.toString()}-${deviceType.toString()}"
+}
+
+def getId(dni)
+{
+    // the logic here has to match childDni()
+    
+    def splitDni = dni?.split('-')
+    
+    if(splitDni)
+    {
+        def id = ""
+        splitDni.eachWithIndex()
+        { it, i ->
+            if(i < (splitDni.size() - 1))
+            {
+                id = id + it + "-"
+            }
+        }
+        return id.substring(0, id.length() - 1)
+    }                                                           
+}
+
+def findChildDevice(id, deviceType)
+{
+    return getChildDevice(childDni(id, deviceType))
+}
+
+def createChildDevice(name, id, deviceType)
+{
+    def child
+    try
+    {
+        if(!["Bot", "Curtain", "Meter", "IR Device"].contains(deviceType.toString()))
+        {
+            logDebug("createChildDevice: deviceType not supported")
+            throw new Exception("deviceType not supported")
+        }
+            
+        return addChildDevice("SwitchBot ${deviceType.toString()}", childDni(id, deviceType), [name: childName(name, deviceType), label: childName(name, deviceType), isComponent: false])
+    }
+    catch (Exception e)
+    {
+        logDebug("createChildDevice() failed: ${e.message}")
+        return
+    }
+}
+
+def readDevices()
+{
+    try
+    {
+        def resp = httpGetExec(genParamsMain("v1.0/devices"), true)
+        
+        if(resp)
+        {
+            setDevices(resp?.data?.body)
+        }
+        
+        sendEvent(name: "commStatus", value: "good")
+    }
+    catch (Exception e)
+    {
+        logDebug("readDevices() failed: ${e.message}")
+        sendEvent(name: "commStatus", value: "error")
+        
+        throw(e)
+    }
+        
+}
+
+def setDevices(devices)
+{
+    state.devices = devices
+}
+
+def getDevices()
+{
+    return state.devices
+}
+
+def readScenes()
+{
+    try
+    {
+        def resp = httpGetExec(genParamsMain("v1.0/scenes"), true)
+        
+        if(resp)
+        {
+            setScenes(resp?.data?.body)
+        }
+        
+        sendEvent(name: "commStatus", value: "good")
+    }
+    catch (Exception e)
+    {
+        logDebug("readScenes() failed: ${e.message}")
+        sendEvent(name: "commStatus", value: "error")
+        
+        throw(e)
+    }
+        
+}
+
+def setScenes(scenes)
+{
+    state.scenes = scenes
+}
+
+def getScenes()
+{
+    return state.scenes
+}
+
+def executeScene(sceneId)
+{
+    try
+    {
+        return httpExec("POST", genParamsMain("v1.0/scenes/${sceneId}/execute"), true)?.data
+    }
+    catch (Exception e)
+    {
+        logDebug("executeScene failed: ${e.message}")
+        throw(e)
+    }
+}
+
+def writeDeviceCommand(id, command, parameter, commandType)
+{
+    try
+    {
+        def body = "{\"command\": \"${command}\", \"parameter\": \"${parameter}\",\"commandType\": \"${commandType}\"}"
+        return httpExec("POST", genParamsMain("v1.0/devices/${id}/commands", body), true)?.data
+    }
+    catch (Exception e)
+    {
+        logDebug("writeDeviceCommand failed: ${e.message}")
+        throw(e)
+    }
+}
+
+def readDeviceStatus(id)
+{
+    try
+    {
+        return httpExec("GET", genParamsMain("v1.0/devices/${id}/status"), true)?.data
+    }
+    catch (Exception e)
+    {
+        logDebug("readDeviceStatus failed: ${e.message}")
+        throw(e)
+    }
+}
+
+def getBaseURI()
+{
+    return "https://api.switch-bot.com/"
+}
+
+def genParamsMain(suffix, body = null)
+{
+    def params =
+        [
+            uri: getBaseURI() + suffix,
+            headers:
+            [
+                'Authorization' : openToken,
+                'Content-Type' : 'application/json; charset=utf8'
+            ]
+        ]
+    
+    if(body)
+    {
+        params['body'] = body
+    }
+ 
+    return params
+}
+
+def httpGetExec(params, throwToCaller = false)
+{
+    logDebug("httpGetExec(${params})")
+    
+    try
+    {
+        def result
+        httpGet(params)
+        { resp ->
+            if (resp)
+            {
+                logDebug("resp.data = ${resp.data}")
+                result = resp
+            }
+        }
+        return result
+    }
+    catch (Exception e)
+    {
+        logDebug("httpGetExec() failed: ${e.message}")
+        //logDebug("status = ${e.getResponse().getStatus().toInteger()}")
+        if(throwToCaller)
+        {
+            throw(e)
+        }
+    }
+}
+
+def httpPostExec(params, throwToCaller = false)
+{
+    logDebug("httpPostExec(${params})")
+    
+    try
+    {
+        def result
+        httpPost(params)
+        { resp ->
+            if (resp)
+            {
+                logDebug("resp.data = ${resp.data}")
+                result = resp
+            }
+        }
+        return result
+    }
+    catch (Exception e)
+    {
+        logDebug("httpPostExec() failed: ${e.message}")
+        //logDebug("status = ${e.getResponse().getStatus().toInteger()}")
+        if(throwToCaller)
+        {
+            throw(e)
+        }
+    }
+}
+
+def httpExec(operation, params, throwToCaller = false)
+{
+    def res
+    
+    switch(operation)
+    {
+        default:
+            logDebug("unsupported Http operation")
+        
+            if(throwToCaller)
+            {
+                throw new Exception("unsupported Http operation")
+            }
+            break
+        
+        case "POST":
+            res = httpPostExec(params, throwToCaller)
+            break
+        
+        case "GET":
+            res = httpGetExec(params, throwToCaller)
+            break
+    }
+    
+    return res
+}

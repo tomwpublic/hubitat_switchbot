@@ -1,0 +1,70 @@
+/*
+
+Copyright 2020 - tomw
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-------------------------------------------
+
+Change history:
+
+0.9.0 - @tomw - Initial release.
+
+*/
+
+metadata
+{
+    definition(name: "SwitchBot IR Device", namespace: "tomw", author: "tomw", importUrl: "")
+    {
+        capability "Refresh"
+        capability "RelaySwitch"
+        capability "Switch"
+        
+        command "sendCommand", [[name: "command*", type: "STRING"], [name: "parameter (leave blank if N/A)", type: "STRING"]]
+    }
+}
+
+def refresh()
+{
+    unschedule(refresh)
+    
+    try
+    {
+        // do something?
+    }
+    catch (Exception e)
+    {
+        log.debug "refresh() failed: ${e.message}"
+    }
+}
+
+def on()
+{
+    sendCommand("turnOn")
+}
+
+def off()
+{
+    sendCommand("turnOff")
+}
+
+def sendCommand(command, parameter = "default")
+{
+    def id = getParent()?.getId(device.getDeviceNetworkId())
+    if(id)
+    {
+        def commandType = (command in ["turnOff", "turnOn"]) ? "command" : "customize"
+        
+        def respData = getParent()?.writeDeviceCommand(id, command, parameter, commandType)
+    }
+}
