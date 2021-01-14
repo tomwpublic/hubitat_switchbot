@@ -36,8 +36,7 @@ metadata
 
 def initialize()
 {
-    sendEvent(name: "humidity", value: "unknown")
-    sendEvent(name: "temperature", value: "unknown")
+    sendEvent(name: "switch", value: "unknown")
     
     refresh()
 }
