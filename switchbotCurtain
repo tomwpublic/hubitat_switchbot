@@ -111,7 +111,7 @@ def on()
 
 def off()
 {
-    off()
+    close()
 }
 
 def open()
