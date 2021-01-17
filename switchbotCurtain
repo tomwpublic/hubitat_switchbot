@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.1 - @tomw - Updated Curtain driver after debugging.  Thanks @dadarkgtprince for testing and feedback.
 0.9.0 - @tomw - Initial release.
 
 */
@@ -68,8 +69,7 @@ def refresh()
         {
             // if moving, get status again to see if we can figure out which direction
             def respData2 = getParent()?.readDeviceStatus(id)
-            if(respData2.body.slidePosition && respData.body.slidePosition &&
-               respData2.body.slidePosition.isInteger() && respData.body.slidePosition.isInteger())
+            if(respData2?.body?.slidePosition && respData.body.slidePosition)
             {
                 windowShade =
                     (respData2.body.slidePosition.toInteger() > respData.body.slidePosition.toInteger()) ? "opening" : "closing"
@@ -78,7 +78,7 @@ def refresh()
             // refresh again so that we get the final state
             runIn(2, refresh)
         }
-        else if(respData.body?.slidePosition && respData.body?.slidePosition.isInteger())
+        else if(respData.body?.slidePosition)
         {
             switch(respData.body.slidePosition.toInteger())
             {
@@ -116,8 +116,6 @@ def off()
 
 def open()
 {
-    if(!checkForCalibration()) {return}
-    
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
@@ -128,8 +126,6 @@ def open()
 
 def close()
 {
-    if(!checkForCalibration()) {return}
-    
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
@@ -140,8 +136,6 @@ def close()
 
 def setPosition(position)
 {
-    if(!checkForCalibration()) {return}
-    
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
@@ -149,26 +143,4 @@ def setPosition(position)
         def respData = getParent()?.writeDeviceCommand(id, "press", "0,ff,100", "command")
         runIn(2, refresh)
     }    
-}
-
-def checkForCalibration()
-{
-    try
-    {
-        def id = getParent()?.getId(device.getDeviceNetworkId())
-        def respData = getParent()?.readDeviceStatus(id)
-        
-        if(!respData || !respData?.body?.calibrate)
-        {
-            log.debug "need to calibrate curtain"
-            return false
-        }
-        
-        return respData.body?.calibrate
-    }
-    catch (Exception e)
-    {
-        log.debug "checkForCalibration() failed: ${e.message}"
-        return false
-    }
 }
