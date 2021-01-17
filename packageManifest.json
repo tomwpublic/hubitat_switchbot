@@ -43,7 +43,7 @@
     
   ],
   "licenseFile": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/LICENSE",
-  "releaseNotes": "0.9.0 - @tomw - Initial release.  HT Meter and IR functionality fully tested.  Other devices untested and released as public beta.",
+  "releaseNotes": "0.9.1 - @tomw - Updated Curtain driver after debugging.  Thanks @dadarkgtprince for testing and feedback.\n0.9.0 - @tomw - Initial release.  HT Meter and IR functionality fully tested.  Other devices untested and released as public beta.",
   "documentationLink": "https://github.com/tomwpublic/hubitat_switchbot/blob/main/README.md",
   "communityLink": "https://community.hubitat.com/t/switchbot-gets-an-open-api/61217/17"
 }
