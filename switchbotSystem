@@ -17,7 +17,7 @@ limitations under the License.
 -------------------------------------------
 
 Change history:
-
+0.9.4 - @tomw - Modified child device creation to reduce confusion around grouped Curtain devices.
 0.9.0 - @tomw - Initial release.
 
 */
@@ -128,11 +128,20 @@ def createChildDevices()
         return
     }
     
-    devices?.deviceList?.each
+    for(it in devices?.deviceList)
     {
         logDebug("device = ${it}")
         if((it.deviceId && it.deviceName && it.deviceType) && !findChildDevice(it.deviceId, it.deviceType))
         {
+            if("Curtain" == it.deviceType)
+            {
+                // only create children for ungrouped Curtains and group masters
+                if(!((it.group != true) || (it.master == true)))
+                {
+                    continue
+                }
+            }
+            
             createChildDevice(it.deviceName, it.deviceId, it.deviceType)
         }
     }
