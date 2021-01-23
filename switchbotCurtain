@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.3 - @tomw - Add SwitchLevel (dimmer) functionality for ease-of-use.  setLevel functions as an alias for setPosition.
 0.9.2 - @tomw - More Curtain debugging.
 0.9.1 - @tomw - Updated Curtain driver after debugging.  Thanks @dadarkgtprince for testing and feedback.
 0.9.0 - @tomw - Initial release.
@@ -32,6 +33,7 @@ metadata
         capability "Refresh"
         capability "RelaySwitch"
         capability "Switch"
+        capability "SwitchLevel"
         capability "WindowShade"
     }
 }
@@ -39,6 +41,7 @@ metadata
 def initialize()
 {
     sendEvent(name: "position", value: "unknown")
+    sendEvent(name: "level", value: "unknown")
     sendEvent(name: "switch", value: "unknown")
     sendEvent(name: "windowShade", value: "unknown")
     
@@ -62,6 +65,7 @@ def refresh()
         if(respData.body?.slidePosition)
         {
             sendEvent(name: "position", value: respData.body.slidePosition)
+            sendEvent(name: "level", value: respData.body.slidePosition)
         }
         
         def windowShade = "unknown"
@@ -140,7 +144,12 @@ def setPosition(position)
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
-        def respData = getParent()?.writeDeviceCommand(id, "press", "0,ff,${position}", "command")
+        def respData = getParent()?.writeDeviceCommand(id, "setPosition", "0,ff,${position}", "command")
         runIn(2, refresh)
     }    
+}
+
+def setLevel(level, duration = null)
+{
+    setPosition(level)    
 }
