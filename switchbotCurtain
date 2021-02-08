@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.5 - @tomw - Swallow unknown API replies instead of using "unknown".
 0.9.4 - @tomw - Add SwitchLevel (dimmer) functionality for ease-of-use.  setLevel functions as an alias for setPosition.
 0.9.2 - @tomw - More Curtain debugging.
 0.9.1 - @tomw - Updated Curtain driver after debugging.  Thanks @dadarkgtprince for testing and feedback.
@@ -100,8 +101,17 @@ def refresh()
                     switchState = "off"
             }
         }
-        sendEvent(name: "windowShade", value: windowShade)
-        sendEvent(name: "switch", value: switchState)
+        
+        if("unknown" != windowShade)
+        {
+            // only send valid new value
+            sendEvent(name: "windowShade", value: windowShade)
+        }
+        if("unknown" != switchState)
+        {
+            // only send valid new value
+            sendEvent(name: "switch", value: switchState)
+        }
     }
     catch (Exception e)
     {
