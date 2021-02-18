@@ -29,7 +29,7 @@ Change history:
 
 metadata
 {
-    definition(name: "SwitchBot Humidifer", namespace: "tomw", author: "tomw", importUrl: "")
+    definition(name: "SwitchBot Humidifier", namespace: "tomw", author: "tomw", importUrl: "")
     {
         capability "Actuator"
         capability "Initialize"
