@@ -1,6 +1,6 @@
 # hubitat_switchBot
 
-This provides various driver capabilities for SwitchBot devices, including the humidity/temperature sensor, bot, curtain, and hub IR functionality.  
+This provides various driver capabilities for SwitchBot devices, including the humidity/temperature sensor, bot, curtain, humidifier, and hub IR functionality.  
 
 Note that all operations have a cloud (internet) interaction.  The HTTP accesses are made according to the SwitchBotAPI reference:
 * https://github.com/OpenWonderLabs/SwitchBotAPI
