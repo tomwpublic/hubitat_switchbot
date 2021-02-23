@@ -9,7 +9,7 @@
       "id": "7af1a40d-7ee8-42f3-a6b9-b9da30281434",
       "name": "SwitchBot System",
       "namespace": "tomw",
-      "location": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/tomwpublic-humidifer/switchbotSystem",
+      "location": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/switchbotSystem",
       "required": true
     },
     {
@@ -44,7 +44,7 @@
       "id": "11c00fbc-df4f-401c-8da7-76e419d9cab0",
       "name": "SwitchBot Humidifier",
       "namespace": "tomw",
-      "location": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/tomwpublic-humidifer/switchbotHumidifier",
+      "location": "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/switchbotHumidifier",
       "required": false
     }    
   ],
