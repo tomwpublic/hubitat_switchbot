@@ -51,11 +51,13 @@ def refresh()
 def on()
 {
     sendCommand("turnOn")
+    sendEvent(name: "switch", value: "on")
 }
 
 def off()
 {
     sendCommand("turnOff")
+    sendEvent(name: "switch", value: "off")
 }
 
 def sendCommand(command, parameter = "default")
