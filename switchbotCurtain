@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.8 - @tomw - Bugfix for windowShade and switch parameters.
 0.9.5 - @tomw - Swallow unknown API replies instead of using "unknown".
 0.9.4 - @tomw - Add SwitchLevel (dimmer) functionality for ease-of-use.  setLevel functions as an alias for setPosition.
 0.9.2 - @tomw - More Curtain debugging.
@@ -78,7 +79,7 @@ def refresh()
             if(respData2?.body?.slidePosition && respData.body.slidePosition)
             {
                 windowShade =
-                    (respData2.body.slidePosition.toInteger() > respData.body.slidePosition.toInteger()) ? "opening" : "closing"
+                    (respData2.body.slidePosition.toInteger() > respData.body.slidePosition.toInteger()) ? "closing" : "opening"
             }
             
             // refresh again so that we get the final state
@@ -89,16 +90,16 @@ def refresh()
             switch(respData.body.slidePosition.toInteger())
             {
                 case 95..100:
-                    windowShade = "open"
-                    switchState = "on"
-                    break
-                case 0..5:
                     windowShade = "closed"
                     switchState = "off"
                     break
+                case 0..5:
+                    windowShade = "open"
+                    switchState = "on"
+                    break
                 default:
                     windowShade = "partially open"
-                    switchState = "off"
+                    switchState = "on"
             }
         }
         
