@@ -76,10 +76,11 @@ def refresh()
         {
             // if moving, get status again to see if we can figure out which direction
             def respData2 = getParent()?.readDeviceStatus(id)
-            if(respData2?.body?.slidePosition && respData.body.slidePosition)
+            if(null != respData2?.body?.slidePosition && null != respData.body.slidePosition)
             {
                 windowShade =
                     (respData2.body.slidePosition.toInteger() > respData.body.slidePosition.toInteger()) ? "closing" : "opening"
+                switchState = "on"                
             }
             
             // refresh again so that we get the final state
