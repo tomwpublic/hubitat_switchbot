@@ -64,7 +64,7 @@ def refresh()
             return
         }
         
-        if(respData.body?.slidePosition)
+        if(null != respData.body?.slidePosition)
         {
             sendEvent(name: "position", value: respData.body.slidePosition)
             sendEvent(name: "level", value: respData.body.slidePosition)
@@ -85,7 +85,7 @@ def refresh()
             // refresh again so that we get the final state
             runIn(2, refresh)
         }
-        else if(respData.body?.slidePosition)
+        else if(null != respData.body?.slidePosition)
         {
             switch(respData.body.slidePosition.toInteger())
             {
