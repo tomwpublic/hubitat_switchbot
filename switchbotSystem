@@ -17,6 +17,7 @@ limitations under the License.
 -------------------------------------------
 
 Change history:
+0.9.7 - @nbetcher - Added Scene device support as a virtual driver.
 0.9.6 - @tomw - Added Humidifier support.
 0.9.3 - @tomw - Modified child device creation to reduce confusion around grouped Curtain devices.
 0.9.0 - @tomw - Initial release.
@@ -123,10 +124,21 @@ def checkCommStatus()
 def createChildDevices()
 {
     def devices = getDevices()
+    def scenes = getScenes()
     
+    // TODO: Handle Scenes still if Devices is null.
     if(!devices)
     {
         return
+    }
+    
+    if (scenes) {
+        for (it in scenes) {
+            logDebug("Scene = ${it}")
+            if((it.sceneName && it.sceneId) && !findChildDevice(it.sceneId, 'Scene')) {
+                createChildDevice(it.sceneName, it.sceneId, 'Scene')
+            }
+        }
     }
     
     for(it in devices?.deviceList)
@@ -205,7 +217,7 @@ def createChildDevice(name, id, deviceType)
     def child
     try
     {
-        if(!["Bot", "Curtain", "Meter", "IR Device", "Humidifier"].contains(deviceType.toString()))
+        if(!["Bot", "Curtain", "Meter", "IR Device", "Humidifier", "Scene"].contains(deviceType.toString()))
         {
             logDebug("createChildDevice: deviceType not supported")
             throw new Exception("deviceType not supported")
