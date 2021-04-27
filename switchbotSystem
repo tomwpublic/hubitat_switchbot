@@ -126,19 +126,21 @@ def createChildDevices()
     def devices = getDevices()
     def scenes = getScenes()
     
-    // TODO: Handle Scenes still if Devices is null.
-    if(!devices)
+    if (scenes)
     {
-        return
-    }
-    
-    if (scenes) {
-        for (it in scenes) {
+        for (it in scenes)
+        {
             logDebug("Scene = ${it}")
-            if((it.sceneName && it.sceneId) && !findChildDevice(it.sceneId, 'Scene')) {
+            if((it.sceneName && it.sceneId) && !findChildDevice(it.sceneId, 'Scene'))
+            {
                 createChildDevice(it.sceneName, it.sceneId, 'Scene')
             }
         }
+    }
+    
+    if(!devices)
+    {
+        return
     }
     
     for(it in devices?.deviceList)
