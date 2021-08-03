@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.9 - @tomw - Add PushableButton.
 0.9.0 - @tomw - Initial release.
 
 */
@@ -28,6 +29,7 @@ metadata
     {
         capability "Initialize"
         capability "Momentary"
+        capability "PushableButton"
         capability "Refresh"
         capability "RelaySwitch"
         capability "Switch"
@@ -37,6 +39,7 @@ metadata
 def initialize()
 {
     sendEvent(name: "switch", value: "unknown")
+    sendEvent(name: "numberOfButtons", value: 1)
     
     refresh()
 }
@@ -86,7 +89,7 @@ def off()
     }
 }
 
-def push()
+def push(buttonNumber = 0)
 {
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
