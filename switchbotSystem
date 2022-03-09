@@ -17,9 +17,11 @@ limitations under the License.
 -------------------------------------------
 
 Change history:
-0.9.6 - @tomw - Added Humidifier support.
-0.9.3 - @tomw - Modified child device creation to reduce confusion around grouped Curtain devices.
-0.9.0 - @tomw - Initial release.
+
+0.9.10 - tomw - Added MeterPlus support.
+0.9.6  - tomw - Added Humidifier support.
+0.9.3  - tomw - Modified child device creation to reduce confusion around grouped Curtain devices.
+0.9.0  - tomw - Initial release.
 
 */
 
@@ -132,6 +134,13 @@ def createChildDevices()
     for(it in devices?.deviceList)
     {
         logDebug("device = ${it}")
+        
+        if(it.deviceType == "MeterPlus")
+        {
+            // MeterPlus uses same API as Meter
+            it.deviceType = "Meter"
+        }
+        
         if((it.deviceId && it.deviceName && it.deviceType) && !findChildDevice(it.deviceId, it.deviceType))
         {
             if("Curtain" == it.deviceType)
