@@ -1,0 +1,217 @@
+/*
+
+Copyright 2020 - tomw
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-------------------------------------------
+
+Change history:
+
+0.9.11 - tomw - Added Strip Light support.
+
+*/
+
+metadata
+{
+    definition(name: "SwitchBot Strip Light", namespace: "tomw", author: "tomw", importUrl: "")
+    {
+        capability "Bulb"
+        capability "ColorControl"
+        capability "Initialize"
+        capability "Refresh"
+        capability "RelaySwitch"
+        capability "Switch"
+        capability "SwitchLevel"
+    }
+}
+
+def initialize()
+{    
+    refresh()
+}
+
+def refresh()
+{
+    unschedule(refresh)
+    
+    try
+    {
+        def id = getParent()?.getId(device.getDeviceNetworkId())
+        def respData = getParent()?.readDeviceStatus(id)
+        
+        if(!respData)
+        {
+            return
+        }
+        
+        sendEvent(name: "level", value: respData.body?.brightness?.toInteger())
+        sendEvent(name: "switch", value: respData.body?.power?.toString())
+        
+        def rgb = respData.body?.color?.split(':')
+        
+        if(3 == rgb.size())
+        {
+            def cRGB = [rgb[0].toInteger(), rgb[1].toInteger(), rgb[2].toInteger()]
+            def cHSV = hubitat.helper.ColorUtils.rgbToHSV(cRGB)
+            
+            sendEvent(name: "hue", value: cHSV[0].toInteger())
+            
+            // use 'real' hue [0..360]            
+            def hue360 = (cHSV[0] * 360 / 100).toFloat().round().toInteger()
+            def colorName = hueToColor(hue360)
+            sendEvent(name: "colorName", value: colorName)
+
+            sendEvent(name: "saturation", value: cHSV[1]?.toInteger())            
+            sendEvent(name: "color", value: [hue: cHSV[0]?.toInteger(), saturation: cHSV[1]?.toInteger(), level: cHSV[2]?.toInteger()])            
+            sendEvent(name: "RGB", value: [red: cRGB[0], green: cRGB[1], blue: cRGB[2]])
+        }
+    }
+    catch (Exception e)
+    {
+        log.debug "refresh() failed: ${e.message}"
+    }
+}
+
+def writeDeviceCommand(command, parameter = "default", commandType = "command")
+{
+    def id = getParent()?.getId(device.getDeviceNetworkId())
+    if(id)
+    {
+        def respData = getParent()?.writeDeviceCommand(id, command, parameter, commandType)
+        runIn(2, refresh)
+    }
+}
+
+def on()
+{
+    writeDeviceCommand("turnOn")
+}
+
+def off()
+{
+    writeDeviceCommand("turnOff")
+}
+
+def setLevel(level, duration = 0)
+{
+    level = (level < 0) ? ((level > 100) ? 100 : level) : level
+    writeDeviceCommand("setBrightness", level)
+}
+
+def setColor(colormap)
+{
+    def cRGB = hubitat.helper.ColorUtils.hsvToRGB([colormap.hue, colormap.saturation, colormap.level])
+    writeDeviceCommand("setColor", "${cRGB[0].toInteger()}:${cRGB[1].toInteger()}:${cRGB[2].toInteger()}")
+}
+
+def getRgbMap()
+{
+    def RGB = device.currentValue("RGB")    
+    if(null == RGB)
+    {
+        return
+    }
+    
+    def rgbMap = [:]
+    for(color in RGB.replace("{","").replace("}","").split(", "))
+    {
+        def splitColor = color.split("=")
+        rgbMap[splitColor[0]] = splitColor[1]
+    }
+    
+    return rgbMap
+}
+
+def setHue(hue)
+{  
+    def rgbMap = getRgbMap()
+    if(null == rgbMap)
+    {
+        return
+    }
+    
+    def cHSV = hubitat.helper.ColorUtils.rgbToHSV([rgbMap.red.toInteger(), rgbMap.green.toInteger(), rgbMap.blue.toInteger()])
+    
+    setColor(['hue': hue, 'saturation': cHSV[1], 'level': cHSV[2]])
+}
+
+def setSaturation(saturation)
+{
+    def rgbMap = getRgbMap()
+    if(null == rgbMap)
+    {
+        return
+    }
+    
+    def cHSV = hubitat.helper.ColorUtils.rgbToHSV([rgbMap.red.toInteger(), rgbMap.green.toInteger(), rgbMap.blue.toInteger()])
+    
+    setColor(['hue': cHSV[0], 'saturation': saturation, 'level': cHSV[2]])
+}
+
+/*
+    Color-related utility functions below this point
+*/
+
+def hueToColor(hue)
+{
+    // referenced from Hubitat sample drivers: https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/drivers/GenericZigbeeRGBWBulb.groovy
+    
+    // use 'real' hue [0..360]
+    def colorName = ""
+    
+    switch (hue.toInteger())
+    {
+		case 0..15:
+			colorName = "Red"
+			break
+		case 16..45:
+			colorName = "Orange"
+			break
+		case 46..75:
+			colorName = "Yellow"
+			break
+		case 76..105:
+			colorName = "Chartreuse"
+			break
+		case 106..135:
+			colorName = "Green"
+			break
+		case 136..165:
+			colorName = "Spring"
+			break
+		case 166..195:
+			colorName = "Cyan"
+			break
+		case 196..225:
+			colorName = "Azure"
+			break
+		case 226..255:
+			colorName = "Blue"
+			break
+		case 256..285:
+			colorName = "Violet"
+			break
+		case 286..315:
+			colorName = "Magenta"
+			break
+		case 316..345:
+			colorName = "Rose"
+			break
+		case 346..360:
+			colorName = "Red"
+			break
+    }
+    
+    return colorName
+}
