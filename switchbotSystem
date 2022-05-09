@@ -30,6 +30,7 @@ metadata
 {
     definition(name: "SwitchBot System", namespace: "tomw", author: "tomw", importUrl: "")
     {
+        capability "Actuator"
         capability "Initialize"
         capability "Refresh"
         
