@@ -29,7 +29,7 @@ Change history:
 
 metadata
 {
-    definition(name: "SwitchBot Curtain", namespace: "tomw", author: "tomw", importUrl: "")
+    definition(name: "SwitchBot Curtain", namespace: "tomw", author: "tomw", importUrl: "https://raw.githubusercontent.com/tomwpublic/hubitat_switchbot/main/switchbotCurtain")
     {
         capability "Initialize"
         capability "Refresh"
