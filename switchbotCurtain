@@ -66,8 +66,12 @@ def refresh()
         
         if(null != respData.body?.slidePosition)
         {
-            sendEvent(name: "position", value: respData.body.slidePosition)
-            sendEvent(name: "level", value: respData.body.slidePosition)
+            /* homebridge compatibility
+            sendEvent(name: "position", value: 100-respData.body.slidePosition)
+            sendEvent(name: "level", value: 100-respData.body.slidePosition)
+            */
+            sendEvent(name: "position", value: 100-respData.body.slidePosition)
+            sendEvent(name: "level", value: 100-respData.body.slidePosition)
         }
         
         def windowShade = "unknown"
@@ -78,8 +82,12 @@ def refresh()
             def respData2 = getParent()?.readDeviceStatus(id)
             if(null != respData2?.body?.slidePosition && null != respData.body.slidePosition)
             {
+                /* homebridge compatibility
                 windowShade =
                     (respData2.body.slidePosition.toInteger() > respData.body.slidePosition.toInteger()) ? "closing" : "opening"
+                */
+                windowShade =
+                    (respData2.body.slidePosition.toInteger() < respData.body.slidePosition.toInteger()) ? "closing" : "opening"
                 switchState = "on"                
             }
             
@@ -90,6 +98,7 @@ def refresh()
         {
             switch(respData.body.slidePosition.toInteger())
             {
+                /* homebridge compatibility
                 case 95..100:
                     windowShade = "closed"
                     switchState = "off"
@@ -97,6 +106,15 @@ def refresh()
                 case 0..5:
                     windowShade = "open"
                     switchState = "on"
+                    break
+                */
+                case 95..100:
+                    windowShade = "open"
+                    switchState = "on"
+                    break
+                case 0..5:
+                    windowShade = "closed"
+                    switchState = "off"
                     break
                 default:
                     windowShade = "partially open"
@@ -156,7 +174,10 @@ def setPosition(position)
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
-        def respData = getParent()?.writeDeviceCommand(id, "setPosition", "0,ff,${position}", "command")
+        /* homebridge compatibility
+        def respData = getParent()?.writeDeviceCommand(id, "setPosition", "0,ff,${100-position}", "command")
+        */
+        def respData = getParent()?.writeDeviceCommand(id, "setPosition", "0,ff,${100-position}", "command")
         runIn(2, refresh)
     }    
 }
