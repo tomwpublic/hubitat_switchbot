@@ -68,14 +68,14 @@ def parse(body)
     
     if(null != body.doorState)
     {
-        def state = body.doorState.toLowerCase()
-        sendEvent(name: "contact", value: ["open", "closed"].contains(state) ? state : "unknown")
+        def dState = body.doorState.toLowerCase()
+        sendEvent(name: "contact", value: ["open", "closed"].contains(dState) ? dState : "unknown")
     }
     
     if(null != body.lockState)
     {
-        def state = body.lockState.toLowerCase()
-        sendEvent(name: "lock", value: ["unlocked", "locked", "jammed"].contains(state) ? state : "unknown")
+        def lState = body.lockState.toLowerCase()
+        sendEvent(name: "lock", value: ["unlocked", "locked", "jammed"].contains(lState) ? lState : "unknown")
     }
 }
 
@@ -98,3 +98,4 @@ def unlock()
 {
     writeDeviceCommand("unlock")
 }
+
