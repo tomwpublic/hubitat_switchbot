@@ -18,7 +18,8 @@ limitations under the License.
 
 Change history:
 
-0.9.0 - @tomw - Initial release.
+0.9.0  - tomw - Initial release.
+0.9.12 - tomw - Added Smart Lock and webhook events support.
 
 */
 
@@ -63,20 +64,27 @@ def refresh()
             return
         }
         
-        if(respData.body?.humidity)
-        {
-            sendEvent(name: "humidity", value: respData.body.humidity.toInteger())
-        }
-        
-        if(respData.body?.temperature)
-        {
-            def tempVal = degC ? respData.body.temperature.toDouble() : celsiusToFahrenheit(respData.body.temperature.toDouble())
-            sendEvent(name: "temperature", value: tempVal?.toDouble())
-        }
+        parse(respData.body)
     }
     catch (Exception e)
     {
         log.debug "refresh() failed: ${e.message}"
+    }
+}
+
+def parse(body)
+{
+    if(!body) { return }
+    
+    if(null != body.humidity)
+    {
+        sendEvent(name: "humidity", value: body.humidity.toInteger())
+    }
+    
+    if(null != body.temperature)
+    {
+        def tempVal = degC ? body.temperature.toDouble() : celsiusToFahrenheit(body.temperature.toDouble())
+        sendEvent(name: "temperature", value: tempVal?.toDouble())
     }
 }
 
