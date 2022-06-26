@@ -18,8 +18,8 @@ limitations under the License.
 
 Change history:
 
-0.9.11 - tomw - Added Strip Light support.
 0.9.12 - tomw - Added Smart Lock and webhook events support.
+0.9.11 - tomw - Added Strip Light support.
 
 */
 
