@@ -232,7 +232,7 @@ def createChildDevice(name, id, deviceType)
     try
     {
         def customDevTypes = ["Bot", "Curtain", "Meter", "IR Device", "Humidifier", "Strip Light", "Smart Lock"]
-        def genericDevTypes = ["Motion Sensor", "Contact Sensor"]
+        def genericDevTypes = []//["Motion Sensor", "Contact Sensor"]
         
         deviceType = deviceType.toString()
         
