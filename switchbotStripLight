@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.12 - tomw - Added Smart Lock and webhook events support.
 0.9.11 - tomw - Added Strip Light support.
 
 */
@@ -55,31 +56,38 @@ def refresh()
             return
         }
         
-        sendEvent(name: "level", value: respData.body?.brightness?.toInteger())
-        sendEvent(name: "switch", value: respData.body?.power?.toString())
-        
-        def rgb = respData.body?.color?.split(':')
-        
-        if(3 == rgb.size())
-        {
-            def cRGB = [rgb[0].toInteger(), rgb[1].toInteger(), rgb[2].toInteger()]
-            def cHSV = hubitat.helper.ColorUtils.rgbToHSV(cRGB)
-            
-            sendEvent(name: "hue", value: cHSV[0].toInteger())
-            
-            // use 'real' hue [0..360]            
-            def hue360 = (cHSV[0] * 360 / 100).toFloat().round().toInteger()
-            def colorName = hueToColor(hue360)
-            sendEvent(name: "colorName", value: colorName)
-
-            sendEvent(name: "saturation", value: cHSV[1]?.toInteger())            
-            sendEvent(name: "color", value: [hue: cHSV[0]?.toInteger(), saturation: cHSV[1]?.toInteger(), level: cHSV[2]?.toInteger()])            
-            sendEvent(name: "RGB", value: [red: cRGB[0], green: cRGB[1], blue: cRGB[2]])
-        }
+        parse(respData.body)
     }
     catch (Exception e)
     {
         log.debug "refresh() failed: ${e.message}"
+    }
+}
+
+def parse(body)
+{
+    if(!body) { return }
+    
+    sendEvent(name: "level", value: body.brightness?.toInteger())
+    sendEvent(name: "switch", value: body.power?.toString()?.toLowerCase())
+    
+    def rgb = body.color?.split(':')
+    
+    if(3 == rgb.size())
+    {
+        def cRGB = [rgb[0].toInteger(), rgb[1].toInteger(), rgb[2].toInteger()]
+        def cHSV = hubitat.helper.ColorUtils.rgbToHSV(cRGB)
+        
+        sendEvent(name: "hue", value: cHSV[0].toInteger())
+        
+        // use 'real' hue [0..360]        
+        def hue360 = (cHSV[0] * 360 / 100).toFloat().round().toInteger()
+        def colorName = hueToColor(hue360)
+        sendEvent(name: "colorName", value: colorName)
+
+        sendEvent(name: "saturation", value: cHSV[1]?.toInteger())        
+        sendEvent(name: "color", value: [hue: cHSV[0]?.toInteger(), saturation: cHSV[1]?.toInteger(), level: cHSV[2]?.toInteger()])        
+        sendEvent(name: "RGB", value: [red: cRGB[0], green: cRGB[1], blue: cRGB[2]])
     }
 }
 

@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.12 - tomw - Added Smart Lock and webhook events support.
 0.9.11 - tomw - Added Strip Light support.
 0.9.10 - tomw - Added MeterPlus support.
 0.9.6  - tomw - Added Humidifier support.
@@ -36,6 +37,9 @@ metadata
         
         command "createChildDevices"
         command "deleteChildDevices"
+        
+        command "cacheToken"
+        command "parse", ["eventMap"]
         
         command "executeScene", ["sceneId"]
         
@@ -124,10 +128,21 @@ def checkCommStatus()
     }
 }
 
+def cacheToken()
+{
+    // workaround to support app that isn't this driver's parent
+    updateDataValue("token", openToken)
+}
+
+def parse(eventMap)
+{
+    findChildDevice(eventMap.deviceId, eventMap.deviceType)?.parse(eventMap)
+}
+
 def createChildDevices()
 {
     def devices = getDevices()
-    
+
     if(!devices)
     {
         return
@@ -216,13 +231,28 @@ def createChildDevice(name, id, deviceType)
     def child
     try
     {
-        if(!["Bot", "Curtain", "Meter", "IR Device", "Humidifier", "Strip Light"].contains(deviceType.toString()))
+        def customDevTypes = ["Bot", "Curtain", "Meter", "IR Device", "Humidifier", "Strip Light", "Smart Lock"]
+        def genericDevTypes = []//["Motion Sensor", "Contact Sensor"]
+        
+        deviceType = deviceType.toString()
+        
+        if(!(customDevTypes + genericDevTypes).contains(deviceType))
         {
             logDebug("createChildDevice: deviceType not supported")
             throw new Exception("deviceType not supported")
         }
-            
-        return addChildDevice("SwitchBot ${deviceType.toString()}", childDni(id, deviceType), [name: childName(name, deviceType), label: childName(name, deviceType), isComponent: false])
+        
+        def virtDevType = ((customDevTypes.contains(deviceType)) ? "SwitchBot " : "Generic Component ") + deviceType
+        def virtDevData = [name: childName(name, deviceType), label: childName(name, deviceType), isComponent: false]
+        
+        if(virtDevType.contains("Generic Component"))
+        {
+            return addChildDevice("hubitat", virtDevType, childDni(id, deviceType), virtDevData)
+        }
+        else
+        {
+            return addChildDevice(virtDevType, childDni(id, deviceType), virtDevData)
+        }
     }
     catch (Exception e)
     {
@@ -328,7 +358,8 @@ def readDeviceStatus(id)
 {
     try
     {
-        return httpExec("GET", genParamsMain("v1.0/devices/${id}/status"), true)?.data
+        def resp = httpExec("GET", genParamsMain("v1.0/devices/${id}/status"), true)?.data
+        return resp
     }
     catch (Exception e)
     {

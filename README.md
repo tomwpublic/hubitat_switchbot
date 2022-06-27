@@ -5,14 +5,18 @@ This provides various driver capabilities for SwitchBot devices, including the h
 Note that all operations have a cloud (internet) interaction.  The HTTP accesses are made according to the SwitchBotAPI reference:
 * https://github.com/OpenWonderLabs/SwitchBotAPI
 
+Installing with Hubitat Package Manager (HPM) is recommended.
+
 # Manual Installation instructions:
 
-* In the *Drivers Code* section of Hubitat, add the switchbotSystem, switchbotBot, switchbotCurtain, switchbotIRDevice, and switchbotMeter drivers.
+* In the *Drivers Code* section of Hubitat, add any drivers that apply to your system: switchbotSystem (always required), switchbotBot, switchbotCurtain, switchbotIRDevice, switchbotMeter, switchbotHumidifier, switchbotStripLight, and switchbotSmartLock.
 * In the *Devices* section of Hubitat, add a *New Virtual Device* of type SwitchBot System
 * On the configuration page for the newly created *Device*, enter these details and then Save Preferences:
     * Your Open Token, which can be acquired as described in the SwitchBotAPI reference: https://github.com/OpenWonderLabs/SwitchBotAPI#getting-started
     * The refresh interval in seconds
         * Note that there is a documented limit of 1000 API accesses per day, and each device refresh or action is at least one access.  Set this number accordingly.
+* OPTIONAL: in the *Apps Code* section of Hubitat, add the switchbotEventsApp.  This step is necessary if you plan to use the webhook feature for real-time device status updates (currently only supported for Meter, Meter Plus, Strip Light, and Smart Lock).
+    * In the *Apps* section of Hubitat, select *Add User App* and install the SwitchBot Events app.  Select your SwitchBot System device and click Done.
 
 # Usage instructions:
 
