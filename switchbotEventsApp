@@ -1,0 +1,206 @@
+/*
+
+Copyright 2020 - tomw
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-------------------------------------------
+
+Change history:
+
+0.9.0  - tomw - Initial release.
+0.9.12 - tomw - Added Smart Lock and webhook events support.
+
+*/
+
+definition(name: "SwitchBot Events", namespace: "tomw", author: "tomw",
+    description: "", category: "Convenience",
+    iconUrl: "", iconX2Url: "", iconX3Url: "")
+
+preferences
+{
+    page(name: "mainPage")
+}
+
+def mainPage()
+{
+    dynamicPage(name: "mainPage", title: "", install: true, uninstall: true)
+    {
+        enableOauth()
+        getToken()
+        
+        section
+        {
+            input name:	"systemDev", type: "capability.*", title: "Select your SwitchBot System device.", multiple: false, required: true
+            input name: "enableLogging", type: "bool", title: "Enable debug logging?", defaultValue: false, required: false
+        }
+    }
+}
+
+def logDebug(msg)
+{
+    if(enableLogging)
+    {
+        log.debug "${msg}"
+    }
+}
+
+def updated()
+{
+    installed()
+}
+
+def params(op)
+{
+    if(!["setupWebhook", "deleteWebhook"].contains(op))
+    {
+        return
+    }
+    
+    def headers = 
+        [
+            Authorization: systemDev.getDataValue("token"),
+        ]
+    
+    def body =
+        [
+            action: op,
+            url: getFullApiServerUrl() + "/events/?access_token=${token}",
+            deviceList: "ALL"
+        ]
+    
+    if("setupWebhook" == op)
+    {
+        body['deviceList'] = "ALL"
+    }
+    
+    def params =
+        [
+            uri: "https://api.switch-bot.com/v1.0/webhook/" + op,
+            headers: headers,
+            body: groovy.json.JsonOutput.toJson(body)
+        ]
+    
+    return params
+}
+
+def installed()
+{
+    systemDev.cacheToken()
+    
+    httpPostJson(params("setupWebhook")) { resp-> logDebug(resp.data) }
+}
+
+def uninstalled()
+{
+    httpPostJson(params("deleteWebhook")) { resp-> logDebug(resp.data) }  
+}
+
+private void enableOauth()
+{
+    // Thanks! - https://github.com/imnotbob/autoMower/blob/main/automower-connect.groovy
+    Map params=
+        [
+            uri: "http://localhost:8080/app/edit/update?_action_update=Update&oauthEnabled=true&id=${app.appTypeId}".toString(),
+            headers: ['Content-Type':'text/html;charset=utf-8']
+        ]
+    try
+    {
+        httpPost(params) {}
+    }
+    catch (e) {}
+}
+
+def getToken()
+{
+    if(!state.accessToken)
+    {
+        createAccessToken()
+    }
+    
+    return state.accessToken
+}
+
+mappings
+{
+    path("/events")
+    {
+        action:
+            [
+                POST: "observeEvent",
+            ]
+    }
+}
+
+def observeEvent()
+{
+    //logDebug("observedEvent: ${request.JSON}")    
+    processEvent(request.JSON)
+}
+
+def processEvent(eventMap)
+{
+    if(!eventMap) { return }
+    
+    logDebug("incoming event: ${eventMap}")
+    
+    if("changeReport" != eventMap?.eventType) { return }
+    
+    // check whether we know about this type of device
+    def devTypeInfo = deviceTypesMap.getAt(eventMap.context.deviceType)    
+    if(!devTypeInfo) { return }
+    
+    // build the event that we'll pass to the driver
+    def newEvent = [:]
+    
+    // include common attributes...
+    def attrsMap = allDevsAttrs
+    // ...plus any device-specific ones that differ between events and polled refreshes
+    if(devTypeInfo.attrs) { attrsMap += devTypeInfo.attrs }
+    
+    // actually re-map as needed
+    eventMap?.context?.keySet().each
+    {
+        key ->
+        newEvent.put(attrsMap?.getAt(key) ?: key, eventMap.context[key])
+    }
+    
+    // save device type for the driver to vector off of    
+    newEvent.put("deviceType", devTypeInfo.name)
+    
+    logDebug("processed event: ${newEvent}")
+    
+    systemDev.parse(newEvent)
+}
+
+import groovy.transform.Field
+
+@Field deviceTypesMap =
+    [
+        WoLock: [name: "Smart Lock"],
+        WoMeter: [name: "Meter"],
+        WoMeterPlus: [name: "Meter"],
+        WoStrip: [name: "Strip Light", attrs: stripLightAttrsMap],        
+    ]
+
+static @Field allDevsAttrs = 
+    [
+        deviceMac: "deviceId"
+    ]
+
+static @Field stripLightAttrsMap =
+    [
+        powerState: "power"
+    ]
+
+
