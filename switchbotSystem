@@ -38,8 +38,6 @@ metadata
         command "createChildDevices"
         command "deleteChildDevices"
         
-        //command "readDeviceStatus", ["deviceId"]
-        
         command "cacheToken"
         command "parse", ["eventMap"]
         
