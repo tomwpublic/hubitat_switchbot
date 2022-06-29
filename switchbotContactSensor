@@ -1,0 +1,73 @@
+/*
+
+Copyright 2020 - tomw
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-------------------------------------------
+
+Change history:
+
+0.9.13 - tomw - Added Contact Sensor and Motion Sensor support.
+
+*/
+
+metadata
+{
+    definition(name: "SwitchBot Contact Sensor", namespace: "tomw", author: "tomw", importUrl: "")
+    {
+        capability "ContactSensor"
+        capability "Initialize"
+        capability "MotionSensor"
+        capability "Refresh"
+        
+        attribute "brightness", "string"
+    }
+}
+
+def initialize()
+{
+    sendEvent(name: "brightness", value: "unknown")
+    sendEvent(name: "contact", value: "unknown")
+    sendEvent(name: "motion", value: "unknown") 
+    
+    refresh()
+}
+
+def refresh()
+{
+    parent.refreshFromParent(device)
+}
+
+def parse(body)
+{
+    if(!body) { return }
+    
+    log.debug body
+    
+    if(null != body.brightness)
+    {
+        sendEvent(name: "brightness", value: body.brightness)
+    }
+    
+    if(null != body.openState)
+    {
+        sendEvent(name: "contact", value: (["open", "DETECTED"].contains(body.openState)) ? "open" : "closed")
+    }
+    
+    if(null != body.moveDetected)
+    {
+        sendEvent(name: "motion", value: ([true, "DETECTED"].contains(body.moveDetected)) ? "active" : "inactive")
+    }
+}
+
