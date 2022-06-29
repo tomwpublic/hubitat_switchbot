@@ -45,7 +45,7 @@ def initialize()
 
 def refresh()
 {
-    parent.refreshFromParent(device)
+    parent?.refreshFromParent(device)
 }
 
 def parse(body)
