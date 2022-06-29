@@ -44,24 +44,7 @@ def initialize()
 
 def refresh()
 {
-    unschedule(refresh)
-    
-    try
-    {
-        def id = getParent()?.getId(device.getDeviceNetworkId())
-        def respData = getParent()?.readDeviceStatus(id)
-        
-        if(!respData)
-        {
-            return
-        }
-        
-        parse(respData.body)
-    }
-    catch (Exception e)
-    {
-        log.debug "refresh() failed: ${e.message}"
-    }
+    parent.refreshFromParent(device)
 }
 
 def parse(body)
