@@ -19,56 +19,55 @@ limitations under the License.
 Change history:
 
 0.9.13 - tomw - Added Contact Sensor and Motion Sensor support.
-0.9.12 - tomw - Added Smart Lock and webhook events support.
-0.9.0  - tomw - Initial release.
 
 */
 
 metadata
 {
-    definition(name: "SwitchBot Meter", namespace: "tomw", author: "tomw", importUrl: "")
+    definition(name: "SwitchBot Contact Sensor", namespace: "tomw", author: "tomw", importUrl: "")
     {
+        capability "ContactSensor"
         capability "Initialize"
-        capability "RelativeHumidityMeasurement"
+        capability "MotionSensor"
         capability "Refresh"
-        capability "TemperatureMeasurement"
-    }
-}
-
-preferences
-{
-    section
-    {
-        input "degC", "bool", title: "Use degrees C? (Off for Degrees F)", defaultValue: true
+        
+        attribute "brightness", "string"
     }
 }
 
 def initialize()
 {
-    sendEvent(name: "humidity", value: "unknown")
-    sendEvent(name: "temperature", value: "unknown") 
+    sendEvent(name: "brightness", value: "unknown")
+    sendEvent(name: "contact", value: "unknown")
+    sendEvent(name: "motion", value: "unknown") 
     
     refresh()
 }
 
 def refresh()
 {
-    parent?.refreshFromParent(device)
+    parent.refreshFromParent(device)
 }
 
 def parse(body)
 {
     if(!body) { return }
     
-    if(null != body.humidity)
+    log.debug body
+    
+    if(null != body.brightness)
     {
-        sendEvent(name: "humidity", value: body.humidity.toInteger())
+        sendEvent(name: "brightness", value: body.brightness)
     }
     
-    if(null != body.temperature)
+    if(null != body.openState)
     {
-        def tempVal = degC ? body.temperature.toDouble() : celsiusToFahrenheit(body.temperature.toDouble())
-        sendEvent(name: "temperature", value: tempVal?.toDouble())
+        sendEvent(name: "contact", value: (["open", "DETECTED"].contains(body.openState)) ? "open" : "closed")
+    }
+    
+    if(null != body.moveDetected)
+    {
+        sendEvent(name: "motion", value: ([true, "DETECTED"].contains(body.moveDetected)) ? "active" : "inactive")
     }
 }
 

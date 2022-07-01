@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.13 - tomw - Added Contact Sensor and Motion Sensor support.
 0.9.12 - tomw - Added Smart Lock and webhook events support.
 0.9.11 - tomw - Added Strip Light support.
 0.9.10 - tomw - Added MeterPlus support.
@@ -56,6 +57,9 @@ preferences
         input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: false
     }
 }
+
+import groovy.transform.Field
+static @Field gComponentFlag = "gComponent"
 
 def logDebug(msg) 
 {
@@ -100,6 +104,15 @@ def refresh()
     
     for(child in getChildDevices())
     {
+        if(child.getDataValue(gComponentFlag))
+        {
+            // This is a Generic Component type.  Do something special.
+            def devStatus = readDeviceStatus(getId(child.getDeviceNetworkId()))?.body
+            // TODO: finish the steps to pass this to parse() on the child if this ever gets used
+            continue
+        }
+        
+        // This is a custom device type.  Pass the refresh() down.
         child.refresh()
     }
     
@@ -134,9 +147,34 @@ def cacheToken()
     updateDataValue("token", openToken)
 }
 
-def parse(eventMap)
+def parse(Map eventMap)
 {
     findChildDevice(eventMap.deviceId, eventMap.deviceType)?.parse(eventMap)
+}
+
+def refreshFromParent(child)
+{
+    if(!child)
+    {
+        return
+    }
+    
+    try
+    {
+        def id = getId(child.getDeviceNetworkId())
+        def respData = readDeviceStatus(id)
+        
+        if(!respData)
+        {
+            return
+        }
+        
+        getChildDevice(child.getDeviceNetworkId())?.parse(respData.body)
+    }
+    catch (Exception e)
+    {
+        log.debug "refresh() failed: ${e.message}"
+    }
 }
 
 def createChildDevices()
@@ -228,11 +266,10 @@ def findChildDevice(id, deviceType)
 
 def createChildDevice(name, id, deviceType)
 {
-    def child
     try
     {
-        def customDevTypes = ["Bot", "Curtain", "Meter", "IR Device", "Humidifier", "Strip Light", "Smart Lock"]
-        def genericDevTypes = []//["Motion Sensor", "Contact Sensor"]
+        def customDevTypes = ["Bot", "Curtain", "Meter", "IR Device", "Humidifier", "Strip Light", "Smart Lock", "Motion Sensor", "Contact Sensor"]
+        def genericDevTypes = []
         
         deviceType = deviceType.toString()
         
@@ -247,7 +284,12 @@ def createChildDevice(name, id, deviceType)
         
         if(virtDevType.contains("Generic Component"))
         {
-            return addChildDevice("hubitat", virtDevType, childDni(id, deviceType), virtDevData)
+            def child = addChildDevice("hubitat", virtDevType, childDni(id, deviceType), virtDevData)
+            
+            // mark this device with a unique data value so that we can tell the difference easily between Generic Component and custom types
+            child?.updateDataValue(gComponentFlag, "yes")
+            
+            return child
         }
         else
         {
