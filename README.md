@@ -15,8 +15,9 @@ Installing with Hubitat Package Manager (HPM) is recommended.
     * Your Open Token, which can be acquired as described in the SwitchBotAPI reference: https://github.com/OpenWonderLabs/SwitchBotAPI#getting-started
     * The refresh interval in seconds
         * Note that there is a documented limit of 1000 API accesses per day, and each device refresh or action is at least one access.  Set this number accordingly.
-* OPTIONAL: in the *Apps Code* section of Hubitat, add the switchbotEventsApp.  This step is necessary if you plan to use the webhook feature for real-time device status updates (currently only supported for Meter, Meter Plus, Strip Light, and Smart Lock).
+* OPTIONAL: in the *Apps Code* section of Hubitat, add the switchbotEventsApp.  This step is necessary if you plan to use the webhook feature for real-time device status updates (currently supported for Meter, Meter Plus, Strip Light, Smart Lock, Motion Sensor, and Contact Sensor).
     * In the *Apps* section of Hubitat, select *Add User App* and install the SwitchBot Events app.  Select your SwitchBot System device and click Done.
+    * Note that some devices only report a subset of their attributes in real-time events.  For example, the Contact Sensor only reports open/close status and the Motion Sensor only reports active/inactive status.
 
 # Usage instructions:
 
