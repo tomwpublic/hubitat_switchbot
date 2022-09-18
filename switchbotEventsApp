@@ -18,13 +18,14 @@ limitations under the License.
 
 Change history:
 
+0.9.14 - tomw - API v1.1 support.
 0.9.13 - tomw - Added Contact Sensor and Motion Sensor support.
 0.9.12 - tomw - Added Smart Lock and webhook events support.
 0.9.0  - tomw - Initial release.
 
 */
 
-definition(name: "SwitchBot Events", namespace: "tomw", author: "tomw",
+definition(name: "SwitchBot Events orig", namespace: "tomw", author: "tomw",
     description: "", category: "Convenience",
     iconUrl: "", iconX2Url: "", iconX3Url: "")
 
@@ -42,8 +43,8 @@ def mainPage()
         
         section
         {
-            input name:	"systemDev", type: "capability.*", title: "Select your SwitchBot System device.", multiple: false, required: true
-            input name: "enableLogging", type: "bool", title: "Enable debug logging?", defaultValue: false, required: false
+            input name:	"systemDev", type: "device.SwitchBotSystem", title: "Select your SwitchBot System device.", multiple: false, required: true
+            input name: "enableLogging", type: "bool", title: "Enable debug logging?", defaultValue: true, required: false
         }
     }
 }
@@ -63,15 +64,17 @@ def updated()
 
 def params(op)
 {
-    if(!["setupWebhook", "deleteWebhook"].contains(op))
+    if(!["setupWebhook", "deleteWebhook", "queryWebhook"].contains(op))
     {
         return
     }
     
-    def headers = 
-        [
-            Authorization: systemDev.getDataValue("token"),
-        ]
+    systemDev.cacheHttpParams()
+    
+    // this is stored as a Json string
+    def params = new groovy.json.JsonSlurper().parseText(systemDev.getDataValue("params"))
+    
+    params.uri += "webhook/${op}"
     
     def body =
         [
@@ -85,20 +88,18 @@ def params(op)
         body['deviceList'] = "ALL"
     }
     
-    def params =
-        [
-            uri: "https://api.switch-bot.com/v1.0/webhook/" + op,
-            headers: headers,
-            body: groovy.json.JsonOutput.toJson(body)
-        ]
+    if("queryWebhook" == op)
+    {
+        body = [action: "queryUrl"]
+    }
+    
+    params.body = groovy.json.JsonOutput.toJson(body)
     
     return params
 }
 
 def installed()
 {
-    systemDev.cacheToken()
-    
     httpPostJson(params("setupWebhook")) { resp-> logDebug(resp.data) }
 }
 
