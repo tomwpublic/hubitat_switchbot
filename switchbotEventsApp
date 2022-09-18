@@ -25,7 +25,7 @@ Change history:
 
 */
 
-definition(name: "SwitchBot Events orig", namespace: "tomw", author: "tomw",
+definition(name: "SwitchBot Events", namespace: "tomw", author: "tomw",
     description: "", category: "Convenience",
     iconUrl: "", iconX2Url: "", iconX3Url: "")
 
