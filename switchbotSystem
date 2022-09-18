@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.14 - tomw - API v1.1 support.
 0.9.13 - tomw - Added Contact Sensor and Motion Sensor support.
 0.9.12 - tomw - Added Smart Lock and webhook events support.
 0.9.11 - tomw - Added Strip Light support.
@@ -39,7 +40,9 @@ metadata
         command "createChildDevices"
         command "deleteChildDevices"
         
+        command "cacheHttpParams"
         command "cacheToken"
+        
         command "parse", ["eventMap"]
         
         command "executeScene", ["sceneId"]
@@ -52,7 +55,8 @@ preferences
 {
     section
     {
-        input "openToken", "text", title: "Open Token (from SwitchBot app)", required: true
+        input "openToken", "text", title: "Token (from SwitchBot app)", required: true
+        input "secretKey", "text", title: "Secret Key (leave blank to use API v1.0; required for API v1.1)", required: false
         input "refreshInterval", "number", title: "Polling refresh interval in seconds (caution: 1000 operation limit per day)", defaultValue: 300
         input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: false
     }
@@ -145,6 +149,12 @@ def cacheToken()
 {
     // workaround to support app that isn't this driver's parent
     updateDataValue("token", openToken)
+}
+
+def cacheHttpParams()
+{
+    // workaround to support app that isn't this driver's parent
+    updateDataValue("params", groovy.json.JsonOutput.toJson(genParamsMain("")))
 }
 
 def parse(Map eventMap)
@@ -307,7 +317,7 @@ def readDevices()
 {
     try
     {
-        def resp = httpGetExec(genParamsMain("v1.0/devices"), true)
+        def resp = httpGetExec(genParamsMain("devices"), true)
         
         if(resp)
         {
@@ -340,7 +350,7 @@ def readScenes()
 {
     try
     {
-        def resp = httpGetExec(genParamsMain("v1.0/scenes"), true)
+        def resp = httpGetExec(genParamsMain("scenes"), true)
         
         if(resp)
         {
@@ -373,7 +383,7 @@ def executeScene(sceneId)
 {
     try
     {
-        return httpExec("POST", genParamsMain("v1.0/scenes/${sceneId}/execute"), true)?.data
+        return httpExec("POST", genParamsMain("scenes/${sceneId}/execute"), true)?.data
     }
     catch (Exception e)
     {
@@ -386,8 +396,10 @@ def writeDeviceCommand(id, command, parameter, commandType)
 {
     try
     {
-        def body = "{\"command\": \"${command}\", \"parameter\": \"${parameter}\",\"commandType\": \"${commandType}\"}"
-        return httpExec("POST", genParamsMain("v1.0/devices/${id}/commands", body), true)?.data
+        def body = [command: command, parameter: parameter, commandType: commandType]
+        body = groovy.json.JsonOutput.toJson(body)
+        
+        return httpExec("POST", genParamsMain("devices/${id}/commands", body), true)?.data
     }
     catch (Exception e)
     {
@@ -400,7 +412,7 @@ def readDeviceStatus(id)
 {
     try
     {
-        def resp = httpExec("GET", genParamsMain("v1.0/devices/${id}/status"), true)?.data
+        def resp = httpExec("GET", genParamsMain("devices/${id}/status"), true)?.data
         return resp
     }
     catch (Exception e)
@@ -415,11 +427,22 @@ def getBaseURI()
     return "https://api.switch-bot.com/"
 }
 
-def genParamsMain(suffix, body = null)
+def isOldApi()
 {
+    // if the secretKey wasn't specified, this is likely a v1.0 API user
+    //  this affects the HTTP headers needed for authentication as well as the path
+    return ["", null].contains(secretKey)
+}
+
+def genParamsMain(suffix, body = null)
+{    
+    def oldApi = isOldApi()    
+    
+    def apiVerStr = oldApi ? "v1.0/" : "v1.1/"
+
     def params =
         [
-            uri: getBaseURI() + suffix,
+            uri: getBaseURI() + apiVerStr + suffix,
             headers:
             [
                 'Authorization' : openToken,
@@ -427,12 +450,38 @@ def genParamsMain(suffix, body = null)
             ]
         ]
     
+    if(!oldApi)
+    {
+        params.headers += calcSignv11()
+    }
+    
     if(body)
     {
         params['body'] = body
     }
  
     return params
+}
+
+def calcSignv11()
+{
+    def t = (new Date().getTime())?.toString()
+    def nonce = ""
+    def data = openToken + t + nonce
+    
+    return [ t: t, sign: hmac_sha256(secretKey, data)?.toUpperCase(), nonce: nonce ]
+}
+
+def hmac_sha256(String secretKey, String data)
+{
+    def mac = javax.crypto.Mac.getInstance("HmacSHA256")
+    def secretKeySpec = new javax.crypto.spec.SecretKeySpec(secretKey.getBytes(), "HmacSHA256")
+    
+    mac.init(secretKeySpec)    
+    def sign = mac.doFinal(data.getBytes())
+    
+    // send it back as a Base64 string
+    return org.apache.commons.codec.binary.Base64.encodeBase64String(sign)
 }
 
 def httpGetExec(params, throwToCaller = false)
