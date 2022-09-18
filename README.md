@@ -12,7 +12,7 @@ Installing with Hubitat Package Manager (HPM) is recommended.
 * In the *Drivers Code* section of Hubitat, add any drivers that apply to your system: switchbotSystem (always required), switchbotBot, switchbotCurtain, switchbotIRDevice, switchbotMeter, switchbotHumidifier, switchbotStripLight, and switchbotSmartLock.
 * In the *Devices* section of Hubitat, add a *New Virtual Device* of type SwitchBot System
 * On the configuration page for the newly created *Device*, enter these details and then Save Preferences:
-    * Your Open Token, which can be acquired as described in the SwitchBotAPI reference: https://github.com/OpenWonderLabs/SwitchBotAPI#getting-started
+    * Your Token and Secret Key, which can be acquired as described in the SwitchBotAPI reference: https://github.com/OpenWonderLabs/SwitchBotAPI#getting-started
     * The refresh interval in seconds
         * Note that there is a documented limit of 1000 API accesses per day, and each device refresh or action is at least one access.  Set this number accordingly.
 * OPTIONAL: in the *Apps Code* section of Hubitat, add the switchbotEventsApp.  This step is necessary if you plan to use the webhook feature for real-time device status updates (currently supported for Meter, Meter Plus, Strip Light, Smart Lock, Motion Sensor, and Contact Sensor).
