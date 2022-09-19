@@ -60,6 +60,7 @@ def logDebug(msg)
 
 def updated()
 {
+    uninstalled()
     installed()
 }
 
