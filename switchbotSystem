@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.15 - tomw - Added Plug Mini support.
 0.9.14 - tomw - API v1.1 support.
 0.9.13 - tomw - Added Contact Sensor and Motion Sensor support.
 0.9.12 - tomw - Added Smart Lock and webhook events support.
@@ -206,6 +207,12 @@ def createChildDevices()
             it.deviceType = "Meter"
         }
         
+        if(["Plug Mini (US)", "Plug Mini (JP)"].contains(it.deviceType))
+        {
+            // alias to same generic type
+            it.deviceType = "Plug Mini"
+        }
+        
         if((it.deviceId && it.deviceName && it.deviceType) && !findChildDevice(it.deviceId, it.deviceType))
         {
             if("Curtain" == it.deviceType)
@@ -278,7 +285,7 @@ def createChildDevice(name, id, deviceType)
 {
     try
     {
-        def customDevTypes = ["Bot", "Curtain", "Meter", "IR Device", "Humidifier", "Strip Light", "Smart Lock", "Motion Sensor", "Contact Sensor"]
+        def customDevTypes = ["Bot", "Curtain", "Meter", "IR Device", "Humidifier", "Strip Light", "Smart Lock", "Motion Sensor", "Contact Sensor", "Plug Mini"]
         def genericDevTypes = []
         
         deviceType = deviceType.toString()
