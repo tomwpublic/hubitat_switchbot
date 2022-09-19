@@ -56,7 +56,7 @@ def parse(body)
     
     def amperage, voltage
     
-    if(null != body.electricCurent)
+    if(null != body.electricCurrent)
     {
         // divide by 10 due to this bug: https://github.com/OpenWonderLabs/SwitchBotAPI/issues/119
         amperage = (body.electricCurrent.toFloat() / 10)?.round(2)
