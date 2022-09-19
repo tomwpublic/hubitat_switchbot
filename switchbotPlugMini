@@ -54,15 +54,26 @@ def parse(body)
     
     sendEvent(name: "switch", value: body.power?.toString()?.toLowerCase())
     
-    // divide by 10 due to this bug: https://github.com/OpenWonderLabs/SwitchBotAPI/issues/119
-    def amperage = body.electricCurrent?.toFloat() / 10
+    def amperage, voltage
     
-    def voltage = body.voltage?.toInteger()
-    def power = (amperage * voltage).round(2)
+    if(null != body.electricCurent)
+    {
+        // divide by 10 due to this bug: https://github.com/OpenWonderLabs/SwitchBotAPI/issues/119
+        amperage = (body.electricCurrent.toFloat() / 10)?.round(2)
+        sendEvent(name: "amperage", value: amperage)
+    }
     
-    sendEvent(name: "amperage", value: amperage)
-    sendEvent(name: "power", value: power)
-    sendEvent(name: "voltage", value: voltage)
+    if(null != body.voltage)
+    {
+        voltage = body.voltage.toInteger()
+        sendEvent(name: "voltage", value: voltage)
+    }
+    
+    if(![amperage, voltage].contains(null))
+    {
+        def power = (amperage * voltage)?.round(2)
+        sendEvent(name: "power", value: power)
+    }
 }
 
 def writeDeviceCommand(command, parameter = "default", commandType = "command")
