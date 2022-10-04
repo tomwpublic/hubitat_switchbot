@@ -65,7 +65,7 @@ def parse(body)
     
     if(null != body.voltage)
     {
-        voltage = body.voltage.toInteger()
+        voltage = body.voltage.toFloat()?.round(2)
         sendEvent(name: "voltage", value: voltage)
     }
     
