@@ -1,0 +1,102 @@
+/*
+
+Copyright 2020 - tomw
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-------------------------------------------
+
+Change history:
+
+0.9.15 - tomw - Added Plug Mini support.
+
+*/
+
+metadata
+{
+    definition(name: "SwitchBot Plug Mini", namespace: "tomw", author: "tomw", importUrl: "")
+    {
+        capability "CurrentMeter"
+        capability "Initialize"
+        capability "PowerMeter"
+        capability "Refresh"
+        capability "RelaySwitch"
+        capability "Switch"
+        capability "VoltageMeasurement"
+        
+        command "toggle"
+    }
+}
+
+def initialize()
+{    
+    refresh()
+}
+
+def refresh()
+{
+    parent?.refreshFromParent(device)
+}
+
+def parse(body)
+{
+    if(!body) { return }
+    
+    sendEvent(name: "switch", value: body.power?.toString()?.toLowerCase())
+    
+    def amperage, voltage
+    
+    if(null != body.electricCurrent)
+    {
+        // divide by 10 due to this bug: https://github.com/OpenWonderLabs/SwitchBotAPI/issues/119
+        amperage = (body.electricCurrent.toFloat() / 10)?.round(2)
+        sendEvent(name: "amperage", value: amperage)
+    }
+    
+    if(null != body.voltage)
+    {
+        voltage = body.voltage.toFloat()?.round(2)
+        sendEvent(name: "voltage", value: voltage)
+    }
+    
+    if(![amperage, voltage].contains(null))
+    {
+        def power = (amperage * voltage)?.round(2)
+        sendEvent(name: "power", value: power)
+    }
+}
+
+def writeDeviceCommand(command, parameter = "default", commandType = "command")
+{
+    def id = getParent()?.getId(device.getDeviceNetworkId())
+    if(id)
+    {
+        def respData = getParent()?.writeDeviceCommand(id, command, parameter, commandType)
+        runIn(2, refresh)
+    }
+}
+
+def on()
+{
+    writeDeviceCommand("turnOn")
+}
+
+def off()
+{
+    writeDeviceCommand("turnOff")
+}
+
+def toggle()
+{
+    writeDeviceCommand("toggle")    
+}

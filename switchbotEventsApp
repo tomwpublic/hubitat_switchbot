@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.15 - tomw - Added Plug Mini support.
 0.9.14 - tomw - API v1.1 support.
 0.9.13 - tomw - Added Contact Sensor and Motion Sensor support.
 0.9.12 - tomw - Added Smart Lock and webhook events support.
@@ -59,6 +60,7 @@ def logDebug(msg)
 
 def updated()
 {
+    uninstalled()
     installed()
 }
 
@@ -193,8 +195,10 @@ import groovy.transform.Field
         WoLock: [name: "Smart Lock"],
         WoMeter: [name: "Meter"],
         WoMeterPlus: [name: "Meter"],
+        WoPlugJP: [name: "Plug Mini", attrs: commonSwitchAttrsMap], 
+        WoPlugUS: [name: "Plug Mini", attrs: commonSwitchAttrsMap], 
         WoPresence: [name: "Motion Sensor", attrs: motionSensorAttrsMap],
-        WoStrip: [name: "Strip Light", attrs: stripLightAttrsMap],        
+        WoStrip: [name: "Strip Light", attrs: commonSwitchAttrsMap],        
     ]
 
 static @Field allDevsAttrs = 
@@ -202,7 +206,7 @@ static @Field allDevsAttrs =
         deviceMac: "deviceId"
     ]
 
-static @Field stripLightAttrsMap =
+static @Field commonSwitchAttrsMap = 
     [
         powerState: "power"
     ]
