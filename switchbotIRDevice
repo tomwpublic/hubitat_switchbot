@@ -18,7 +18,8 @@ limitations under the License.
 
 Change history:
 
-0.9.0 - @tomw - Initial release.
+0.9.17 - tomw - Added support for remaining built-in IR commands.
+0.9.0  - tomw - Initial release.
 
 */
 
@@ -65,8 +66,36 @@ def sendCommand(command, parameter = "default")
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
-        def commandType = (command in ["turnOff", "turnOn"]) ? "command" : "customize"
-        
+        def commandType = (command in standardCommands) ? "command" : "customize"
         def respData = getParent()?.writeDeviceCommand(id, command, parameter, commandType)
     }
 }
+
+import groovy.transform.Field
+
+@Field standardCommands = 
+    [
+        "turnOn",
+        "turnOff",
+        "setAll",
+        "SetChannel",
+        "volumeAdd",
+        "volumeSub",
+        "channelAdd",
+        "channelSub",
+        "setMute",
+        "FastForward",
+        "Rewind",
+        "Next",
+        "Previous",
+        "Pause",
+        "Play",
+        "Stop",
+        "swing",
+        "timer",
+        "lowSpeed",
+        "middleSpeed",
+        "highSpeed",
+        "brightnessUp",
+        "brightnessDown"
+    ]
