@@ -1,6 +1,6 @@
 # hubitat_switchBot
 
-This provides various driver capabilities for SwitchBot devices, including the humidity/temperature meter, bot, curtain, humidifier, strip light, smart lock, motion sensor, contact sensor, plug mini, and hub IR functionality.  
+This provides various driver capabilities for SwitchBot devices, including the humidity/temperature meter, bot, curtain, humidifier, strip light, color bulb (using the strip light driver), smart lock, motion sensor, contact sensor, plug mini, and hub IR functionality.  
 
 Note that all operations have a cloud (internet) interaction.  The HTTP accesses are made according to the SwitchBotAPI reference:
 * https://github.com/OpenWonderLabs/SwitchBotAPI
