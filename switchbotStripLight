@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.18 - tomw - Added Color Bulb support (in SwitchBot Strip Light driver).
 0.9.13 - tomw - Added Contact Sensor and Motion Sensor support.
 0.9.12 - tomw - Added Smart Lock and webhook events support.
 0.9.11 - tomw - Added Strip Light support.
@@ -30,6 +31,8 @@ metadata
     {
         capability "Bulb"
         capability "ColorControl"
+        capability "ColorMode"
+        capability "ColorTemperature"
         capability "Initialize"
         capability "Refresh"
         capability "RelaySwitch"
@@ -55,9 +58,12 @@ def parse(body)
     sendEvent(name: "level", value: body.brightness?.toInteger())
     sendEvent(name: "switch", value: body.power?.toString()?.toLowerCase())
     
+    def colorMode = (body.color == "0:0:0") ? "CT" : (body.colorTemperature?.toInteger() < 2000) ? "RGB" : null
+    sendEvent(name: "colorMode", value: colorMode)
+    
     def rgb = body.color?.split(':')
     
-    if(3 == rgb.size())
+    if(3 == rgb.size() && colorMode == "RGB")
     {
         def cRGB = [rgb[0].toInteger(), rgb[1].toInteger(), rgb[2].toInteger()]
         def cHSV = hubitat.helper.ColorUtils.rgbToHSV(cRGB)
@@ -73,6 +79,12 @@ def parse(body)
         sendEvent(name: "color", value: [hue: cHSV[0]?.toInteger(), saturation: cHSV[1]?.toInteger(), level: cHSV[2]?.toInteger()])        
         sendEvent(name: "RGB", value: [red: cRGB[0], green: cRGB[1], blue: cRGB[2]])
     }
+    
+    if(null != body.colorTemperature && colorMode == "CT")
+    {
+        sendEvent(name: "colorTemperature", value: body.colorTemperature.toInteger())
+        sendEvent(name: "colorName", value: tempToColor(body.colorTemperature))
+    }
 }
 
 def writeDeviceCommand(command, parameter = "default", commandType = "command")
@@ -82,6 +94,15 @@ def writeDeviceCommand(command, parameter = "default", commandType = "command")
     {
         def respData = getParent()?.writeDeviceCommand(id, command, parameter, commandType)
         runIn(2, refresh)
+        
+        switch(respData?.statusCode?.toInteger())
+        {
+            case 160:
+                log.error "setColorTemperature() is not supported for this device type"
+                return false
+            case 100:
+                return true
+        }
     }
 }
 
@@ -107,9 +128,25 @@ def setColor(colormap)
     writeDeviceCommand("setColor", "${cRGB[0].toInteger()}:${cRGB[1].toInteger()}:${cRGB[2].toInteger()}")
 }
 
+def setColorTemperature(colortemp, level = null, transitionTime = null)
+{
+    colortemp = colortemp.toInteger()
+    
+    if(colortemp < 2200 || colortemp > 7000)
+    {
+        return
+    }
+    
+    if(writeDeviceCommand("setColorTemperature", colortemp))
+    {
+        level = (null != level) ? level : device.currentValue("level")
+        setLevel(level)
+    }
+}
+
 def getRgbMap()
 {
-    def RGB = device.currentValue("RGB")    
+    def RGB = device.currentValue("RGB")
     if(null == RGB)
     {
         return
@@ -153,14 +190,13 @@ def setSaturation(saturation)
 
 /*
     Color-related utility functions below this point
+        referenced from Hubitat sample drivers: https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/drivers/GenericZigbeeRGBWBulb.groovy
 */
 
 def hueToColor(hue)
 {
-    // referenced from Hubitat sample drivers: https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/drivers/GenericZigbeeRGBWBulb.groovy
-    
     // use 'real' hue [0..360]
-    def colorName = ""
+    def colorName = "unknown"
     
     switch (hue.toInteger())
     {
@@ -206,4 +242,27 @@ def hueToColor(hue)
     }
     
     return colorName
+}
+
+def tempToColor(temp)
+{
+    if (!temp) { return }
+    
+    def genericName = "unknown"
+    
+    def value = temp.toInteger()
+    if (value <= 2000) genericName = "Sodium"
+    else if (value <= 2100) genericName = "Starlight"
+    else if (value < 2400) genericName = "Sunrise"
+    else if (value < 2800) genericName = "Incandescent"
+    else if (value < 3300) genericName = "Soft White"
+    else if (value < 3500) genericName = "Warm White"
+    else if (value < 4150) genericName = "Moonlight"
+    else if (value <= 5000) genericName = "Horizon"
+    else if (value < 5500) genericName = "Daylight"
+    else if (value < 6000) genericName = "Electronic"
+    else if (value <= 6500) genericName = "Skylight"
+    else if (value < 20000) genericName = "Polar"
+        
+    return genericName
 }
