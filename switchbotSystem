@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.18 - tomw - Added Color Bulb support (in SwitchBot Strip Light driver).
 0.9.15 - tomw - Added Plug Mini support.
 0.9.14 - tomw - API v1.1 support.
 0.9.13 - tomw - Added Contact Sensor and Motion Sensor support.
@@ -211,6 +212,11 @@ def createChildDevices()
         {
             // alias to same generic type
             it.deviceType = "Plug Mini"
+        }
+        
+        if(it.deviceType == "Color Bulb")
+        {
+            it.deviceType = "Strip Light"
         }
         
         if((it.deviceId && it.deviceName && it.deviceType) && !findChildDevice(it.deviceId, it.deviceType))
