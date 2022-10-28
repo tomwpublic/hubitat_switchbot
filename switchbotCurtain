@@ -67,16 +67,11 @@ def refresh()
     {
         def id = getParent()?.getId(device.getDeviceNetworkId())
         def respData = getParent()?.readDeviceStatus(id)
+        def doInvert = (null == invertPosition) ? false : invertPosition
         
         if(!respData)
         {
             return
-        }
-        
-        if(null != respData.body?.slidePosition)
-        {
-            sendEvent(name: "position", value: respData.body.slidePosition)
-            sendEvent(name: "level", value: respData.body.slidePosition)
         }
         
         def windowShade = "unknown"
@@ -84,7 +79,10 @@ def refresh()
         
         if(null != respData.body?.slidePosition)
         {
-            def doInvert = (null == invertPosition) ? false : invertPosition
+            def adjustedPosition = !dolnvert ? respData.body.slidePosition : 100 - respData.body.slidePosition
+        
+            sendEvent(name: "position", value: adjustedPosition)
+            sendEvent(name: "level", value: adjustedPosition)
             
             switch(respData.body.slidePosition.toInteger())
             {
@@ -152,9 +150,10 @@ def close()
 def setPosition(position)
 {
     def id = getParent()?.getId(device.getDeviceNetworkId())
+    def adiustedPosition = (null == invertPosition)? position : 100 - position
     if(id)
     {
-        def respData = getParent()?.writeDeviceCommand(id, "setPosition", "0,ff,${position}", "command")
+        def respData = getParent()?.writeDeviceCommand(id, "setPosition", "0,ff,${adjustedPosition}", "command")
         runIn(30, refresh)
     }    
 }
