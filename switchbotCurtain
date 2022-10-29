@@ -18,6 +18,7 @@ limitations under the License.
 
 Change history:
 
+0.9.19 - tomw - support invertPosition in commands
 0.9.16 - tomw - add invertPosition option and simplify refresh() logic
 0.9.8  - tomw - Bugfix for windowShade and switch parameters.
 0.9.5  - tomw - Swallow unknown API replies instead of using "unknown".
@@ -75,42 +76,22 @@ def refresh()
         
         if(null != respData.body?.slidePosition)
         {
-            sendEvent(name: "position", value: respData.body.slidePosition)
-            sendEvent(name: "level", value: respData.body.slidePosition)
-        }
-        
-        def windowShade = "unknown"
-        def switchState = "unknown"
-        
-        if(null != respData.body?.slidePosition)
-        {
-            def doInvert = (null == invertPosition) ? false : invertPosition
+            def pos = correctedPositions(respData.body.slidePosition)
             
-            switch(respData.body.slidePosition.toInteger())
+            sendEvent(name: "position", value: pos?.position)
+            sendEvent(name: "level", value: pos?.level)
+            
+            if("unknown" != pos?.windowShade)
             {
-                case 0..5:
-                    windowShade = !doInvert ? "closed" : "open"
-                    switchState = !doInvert ? "off" : "on"
-                    break
-                case 95..100:
-                    windowShade = !doInvert ? "open" : "closed"
-                    switchState = !doInvert ? "on" : "off"
-                    break
-                default:
-                    windowShade = "partially open"
-                    switchState = "on"
+                // only send valid new value
+                sendEvent(name: "windowShade", value: pos?.windowShade)
             }
-        }
-        
-        if("unknown" != windowShade)
-        {
-            // only send valid new value
-            sendEvent(name: "windowShade", value: windowShade)
-        }
-        if("unknown" != switchState)
-        {
-            // only send valid new value
-            sendEvent(name: "switch", value: switchState)
+            
+            if("unknown" != pos?.switchState)
+            {
+                // only send valid new value
+                sendEvent(name: "switch", value: pos?.switchState)
+            }
         }
     }
     catch (Exception e)
@@ -134,7 +115,7 @@ def open()
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
-        def respData = getParent()?.writeDeviceCommand(id, "turnOn", "default", "command")
+        def respData = getParent()?.writeDeviceCommand(id, correctedCommand("turnOn"), "default", "command")
         runIn(30, refresh)
     }
 }
@@ -144,7 +125,7 @@ def close()
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
-        def respData = getParent()?.writeDeviceCommand(id, "turnOff", "default", "command")
+        def respData = getParent()?.writeDeviceCommand(id, correctedCommand("turnOff"), "default", "command")
         runIn(30, refresh)
     }
 }
@@ -154,7 +135,8 @@ def setPosition(position)
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
-        def respData = getParent()?.writeDeviceCommand(id, "setPosition", "0,ff,${position}", "command")
+        def pos = correctedPositions(position)
+        def respData = getParent()?.writeDeviceCommand(id, "setPosition", "0,ff,${pos?.position}", "command")
         runIn(30, refresh)
     }    
 }
@@ -162,4 +144,67 @@ def setPosition(position)
 def setLevel(level, duration = null)
 {
     setPosition(level)    
+}
+
+def doInvert()
+{
+    (null == invertPosition) ? false : invertPosition    
+}
+
+def correctedPositions(rawPos)
+{
+    rawPos = rawPos?.toInteger()
+    
+    if(!rawPos) { return }
+    
+    def doInvert = doInvert()
+    
+    def windowShade = "unknown"
+    def switchState = "unknown"
+    
+    switch(rawPos)
+    {
+        case 0..5:
+            windowShade = !doInvert ? "closed" : "open"
+            switchState = !doInvert ? "off" : "on"
+            break
+        
+        case 95..100:
+            windowShade = !doInvert ? "open" : "closed"
+            switchState = !doInvert ? "on" : "off"
+            break
+        
+        default:
+            windowShade = "partially open"
+            switchState = "on"
+    }
+    
+    def position = doInvert ? 100 - rawPos : rawPos
+    def level = position
+    
+    def retVal =
+        [
+            windowShade: windowShade,
+            switchState: switchState,
+            position: position,
+            level: level
+        ]
+    
+    return retVal
+}
+
+def correctedCommand(rawCom)
+{
+    if(!["turnOn", "turnOff"].contains(rawCom)) { return }
+    
+    def doInvert = doInvert()
+    
+    switch(rawCom)
+    {
+        case "turnOn":
+            return doInvert ? "turnOff" : "turnOn"
+        
+        case "turnOff":
+            return doInvert ? "turnOn" : "turnOff"
+    }
 }
