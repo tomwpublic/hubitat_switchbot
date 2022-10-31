@@ -115,7 +115,7 @@ def open()
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
-        def respData = getParent()?.writeDeviceCommand(id, correctedCommand("turnOn"), "default", "command")
+        def respData = getParent()?.writeDeviceCommand(id, "turnOn", "default", "command")
         runIn(30, refresh)
     }
 }
@@ -125,7 +125,7 @@ def close()
     def id = getParent()?.getId(device.getDeviceNetworkId())
     if(id)
     {
-        def respData = getParent()?.writeDeviceCommand(id, correctedCommand("turnOff"), "default", "command")
+        def respData = getParent()?.writeDeviceCommand(id, "turnOff", "default", "command")
         runIn(30, refresh)
     }
 }
@@ -153,9 +153,9 @@ def doInvert()
 
 def correctedPositions(rawPos)
 {
-    rawPos = rawPos?.toInteger()
+    if(null == rawPos) { return }
     
-    if(!rawPos) { return }
+    rawPos = rawPos?.toInteger()
     
     def doInvert = doInvert()
     
@@ -191,20 +191,4 @@ def correctedPositions(rawPos)
         ]
     
     return retVal
-}
-
-def correctedCommand(rawCom)
-{
-    if(!["turnOn", "turnOff"].contains(rawCom)) { return }
-    
-    def doInvert = doInvert()
-    
-    switch(rawCom)
-    {
-        case "turnOn":
-            return doInvert ? "turnOff" : "turnOn"
-        
-        case "turnOff":
-            return doInvert ? "turnOn" : "turnOff"
-    }
 }
