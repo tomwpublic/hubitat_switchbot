@@ -18,7 +18,7 @@ limitations under the License.
 
 Change history:
 
-0.9.19 - tomw - support invertPosition in commands
+0.9.19 - tomw - improved/completed support for invertPosition
 0.9.16 - tomw - add invertPosition option and simplify refresh() logic
 0.9.8  - tomw - Bugfix for windowShade and switch parameters.
 0.9.5  - tomw - Swallow unknown API replies instead of using "unknown".
