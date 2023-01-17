@@ -225,6 +225,10 @@ def correctedPositions(rawPos)
             switchState = "off"
             break
         
+        case 6..94:
+            windowShade = "partially open"
+            break
+        
         case 95..100:
             windowShade = "open"
             break
