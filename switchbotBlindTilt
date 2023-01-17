@@ -47,7 +47,9 @@ def initialize()
     sendEvent(name: "level", value: "unknown")
     sendEvent(name: "switch", value: "unknown")
     sendEvent(name: "tilt", value: "unknown")
+    
     sendEvent(name: "windowBlind", value: "unknown")
+    sendEvent(name: "windowShade", value: "unknown")
     
     refresh()
 }
@@ -70,13 +72,17 @@ def refresh()
         {
             def pos = correctedPositions(respData.body.slidePosition)
             
-            sendEvent(name: "position", value: pos?.position)
-            sendEvent(name: "tilt", value: pos?.position)
-            sendEvent(name: "level", value: pos?.level)
+            if(null != pos?.position)
+            {
+                sendEvent(name: "position", value: pos.position)
+                sendEvent(name: "tilt", value: pos.position)
+                sendEvent(name: "level", value: pos.position)
+            }
             
             if("unknown" != pos?.windowShade)
             {
                 // only send valid new value
+                sendEvent(name: "windowBlind", value: pos?.windowBlind)
                 sendEvent(name: "windowShade", value: pos?.windowShade)
             }
             
@@ -226,14 +232,12 @@ def correctedPositions(rawPos)
     
     // commands require even number for position, so make it match here
     position = makeEven(position)
-    def level = position
     
     def retVal =
         [
             windowShade: windowShade,
             switchState: switchState,
             position: position,
-            level: level
         ]
     
     return retVal
