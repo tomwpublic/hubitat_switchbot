@@ -82,7 +82,7 @@ def refresh()
             if("unknown" != pos?.windowShade)
             {
                 // only send valid new value
-                sendEvent(name: "windowBlind", value: pos?.windowBlind)
+                sendEvent(name: "windowBlind", value: pos?.windowShade)
                 sendEvent(name: "windowShade", value: pos?.windowShade)
             }
             
