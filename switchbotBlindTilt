@@ -1,0 +1,240 @@
+/*
+
+Copyright 2020 - tomw
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+-------------------------------------------
+
+Change history:
+
+0.9.20 - tomw - Added Blind Tilt support.
+
+*/
+
+metadata
+{
+    definition(name: "SwitchBot Blind Tilt", namespace: "tomw", author: "tomw", importUrl: "")
+    {
+        capability "Initialize"
+        capability "Refresh"
+        capability "RelaySwitch"
+        capability "Switch"
+        capability "SwitchLevel"
+        capability "WindowBlind"
+        
+        command "setTiltDirection", [[name: "direction*", type:"ENUM", description:"Desired tile direction", constraints: ["up", "down"]]]    
+    }
+}
+
+preferences
+{
+}
+
+def initialize()
+{
+    sendEvent(name: "position", value: "unknown")
+    sendEvent(name: "level", value: "unknown")
+    sendEvent(name: "switch", value: "unknown")
+    sendEvent(name: "tilt", value: "unknown")
+    sendEvent(name: "windowBlind", value: "unknown")
+    
+    refresh()
+}
+
+def refresh()
+{
+    unschedule(refresh)
+    
+    try
+    {
+        def id = getParent()?.getId(device.getDeviceNetworkId())
+        def respData = getParent()?.readDeviceStatus(id)
+        
+        if(!respData)
+        {
+            return
+        }
+        
+        if(null != respData.body?.slidePosition)
+        {
+            def pos = correctedPositions(respData.body.slidePosition)
+            
+            sendEvent(name: "position", value: pos?.position)
+            sendEvent(name: "tilt", value: pos?.position)
+            sendEvent(name: "level", value: pos?.level)
+            
+            if("unknown" != pos?.windowShade)
+            {
+                // only send valid new value
+                sendEvent(name: "windowShade", value: pos?.windowShade)
+            }
+            
+            if("unknown" != pos?.switchState)
+            {
+                // only send valid new value
+                sendEvent(name: "switch", value: pos?.switchState)
+            }
+        }
+    }
+    catch (Exception e)
+    {
+        log.debug "refresh() failed: ${e.message}"
+    }
+}
+
+def on()
+{
+    open()
+}
+
+def off()
+{
+    close()
+}
+
+def open()
+{
+    def id = getParent()?.getId(device.getDeviceNetworkId())
+    if(id)
+    {
+        def respData = getParent()?.writeDeviceCommand(id, "fullyOpen", "default", "command")
+        runIn(30, refresh)
+    }
+}
+
+def close()
+{
+    def id = getParent()?.getId(device.getDeviceNetworkId())
+    if(id)
+    {
+        def cmd = (getTiltDirection() == "down") ? "closeDown" : "closeUp"
+        def respData = getParent()?.writeDeviceCommand(id, cmd, "default", "command")
+        runIn(30, refresh)
+    }
+}
+
+def setPosition(position)
+{
+    def id = getParent()?.getId(device.getDeviceNetworkId())
+    if(id)
+    {
+        position = position?.toInteger()
+        
+        // position command is in the range of 0..100 for each direction ("up" or "down")
+        // position parameter requires even number        
+        def respData = getParent()?.writeDeviceCommand(id, "setPosition", "${getTiltDirection()};${makeEven(position)}", "command")
+        runIn(30, refresh)
+    }    
+}
+
+def setLevel(level, duration = null)
+{
+    setPosition(level)    
+}
+
+def setTiltLevel(tilt)
+{
+    setPosition(tilt)
+}
+
+def startPositionChange(direction)
+{
+    log.warn "startPositionChange not supported"
+}
+
+def stopPositionChange()
+{
+    log.warn "stopPositionChange not supported"
+}
+
+def setTiltDirection(direction)
+{
+    state.direction = ((direction == "down") ? "down" : "up")
+}
+
+def getTiltDirection()
+{
+    return state.direction ?: "up"
+}
+
+def doInvert()
+{
+    (null == invertPosition) ? false : invertPosition    
+}
+
+def makeEven(num)
+{
+    // command for position must be a multiple of 2 and in the range of 0..100
+    def even = (++num / 2).toInteger() * 2
+    // bound to 0..100
+    return (even <= 0) ? 0 : ((even <= 100) ? even : 100)
+}
+
+def correctedPositions(rawPos)
+{
+    if(null == rawPos) { return }
+    
+    rawPos = rawPos?.toInteger()
+    
+    def windowShade = "unknown"
+    def switchState = "on"
+    
+    def position
+    
+    switch(rawPos)
+    {
+        // position is reported in range of 0..100
+        //   50 is opened (horizontal)
+        //   0 is closed down
+        //   100 is closed up
+        // ...
+        
+        case 0..50:
+            // ...so, make range of 0..50 be closed down through fully open (0..100)
+            position = rawPos * 2
+            break
+        
+        case 51..100:
+            // ... and, make range of 51..100 be fully opened through closed up (100..0)
+            position = 200 - (rawPos * 2)
+            break
+    }
+    
+    // now that the positions are corrected, the "switch" and "windowShade" attributes are straightforward
+    switch(position)
+    {
+        case 0..5:
+            windowShade = "closed"
+            switchState = "off"
+            break
+        
+        case 95..100:
+            windowShade = "open"
+            break
+    }
+    
+    // commands require even number for position, so make it match here
+    position = makeEven(position)
+    def level = position
+    
+    def retVal =
+        [
+            windowShade: windowShade,
+            switchState: switchState,
+            position: position,
+            level: level
+        ]
+    
+    return retVal
+}
