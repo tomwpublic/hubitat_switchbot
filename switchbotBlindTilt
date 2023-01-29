@@ -33,7 +33,7 @@ metadata
         capability "SwitchLevel"
         capability "WindowBlind"
         
-        command "setTiltDirection", [[name: "direction*", type:"ENUM", description:"Desired tile direction", constraints: ["up", "down"]]]    
+        command "setTiltDirection", [[name: "direction*", type:"ENUM", description:"Desired tilt direction", constraints: ["up", "down"]]]    
     }
 }
 
