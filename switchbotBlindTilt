@@ -32,6 +32,7 @@ metadata
         capability "Switch"
         capability "SwitchLevel"
         capability "WindowBlind"
+        capability "WindowShade"
         
         command "setTiltDirection", [[name: "direction*", type:"ENUM", description:"Desired tilt direction", constraints: ["up", "down"]]]    
     }
