@@ -18,7 +18,9 @@ limitations under the License.
 
 Change history:
 
-
+0.9.21 - tomw -
+    Added temperature, humidity, and lightLevel support for Hub 2 (in SwitchBot Meter driver).
+    Added Indoor/Outdoor Thermo-Hygrometer (in SwitchBot Meter driver).
 0.9.20 - tomw - Added Blind Tilt support.
 0.9.18 - tomw - Added Color Bulb support (in SwitchBot Strip Light driver).
 0.9.15 - tomw - Added Plug Mini support.
@@ -204,9 +206,15 @@ def createChildDevices()
     {
         logDebug("device = ${it}")
         
-        if(it.deviceType == "MeterPlus")
+        if(it.deviceType == "Hub 2")
         {
-            // MeterPlus uses same API as Meter
+            // the Hub 2 has temp/humidity that reports the same as a Meter
+            it.deviceType = "Meter"
+        }
+        
+        if(["MeterPlus", "WoIOSensor"].contains(it.deviceType))
+        {
+            // MeterPlus and Indoor/Outdoor sensor uses same API as Meter
             it.deviceType = "Meter"
         }
         
@@ -297,6 +305,12 @@ def createChildDevice(name, id, deviceType)
         def genericDevTypes = []
         
         deviceType = deviceType.toString()
+        
+        if(["Hub Mini"].contains(deviceType))
+        {
+            // unsupported child type, so bail out
+            return
+        }
         
         if(!(customDevTypes + genericDevTypes).contains(deviceType))
         {
