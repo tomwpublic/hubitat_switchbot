@@ -218,16 +218,9 @@ def createChildDevices()
             it.deviceType = "Meter"
         }
         
-        if(["Plug Mini (US)", "Plug Mini (JP)"].contains(it.deviceType))
-        {
-            // alias to same generic type
-            it.deviceType = "Plug Mini"
-        }
-        
-        if(it.deviceType == "Color Bulb")
-        {
-            it.deviceType = "Strip Light"
-        }
+        if(["Plug Mini (US)", "Plug Mini (JP)"].contains(it.deviceType)) { it.deviceType = "Plug Mini" }        
+        if(it.deviceType == "Color Bulb") { it.deviceType = "Strip Light" }        
+        if(it.deviceType == "Curtain3") { it.deviceType = "Curtain" }
         
         if((it.deviceId && it.deviceName && it.deviceType) && !findChildDevice(it.deviceId, it.deviceType))
         {
